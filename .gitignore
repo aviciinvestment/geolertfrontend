@@ -6,3 +6,4 @@ build/
 server
 .env
 .env.local
+*.timestamp-*

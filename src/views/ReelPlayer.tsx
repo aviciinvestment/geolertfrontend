@@ -44,7 +44,7 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
               viewCountedRef.current = true;
               StreamService.viewReel(stream._id).then((res) => {
                 if (res.success && res.data) {
-                  setViewCount(res.data.views);
+                  setViewCount(res.data.views || 0);
                 }
               });
             }
