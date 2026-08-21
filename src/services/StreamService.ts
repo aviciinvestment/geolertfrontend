@@ -15,6 +15,11 @@ export interface Stream {
   distanceMiles?: number;
   canInteract?: boolean;
   isLikedByMe?: boolean;
+  location?: { type: string; coordinates: [number, number] };
+  aiAnalysis?: { summary: string; transcript: string; description: string; severityReason: string };
+  severity?: number;
+  engagementPriority?: number;
+  status?: 'pending' | 'attended' | 'false_report';
 }
 
 export interface Comment {
@@ -33,6 +38,7 @@ export interface UserProfile {
   avatar?: string;
   bio?: string;
   isAnonymous: boolean;
+  trustScore?: number;
   createdAt: string;
 }
 
@@ -59,6 +65,19 @@ export const StreamService = {
     } catch (error) {
       console.error('Error fetching feed:', error);
       throw error;
+    }
+  },
+
+  getAnalytics: async (): Promise<any> => {
+    try {
+      const response = await fetch(`${API_URL}/analytics`, {
+        headers: { ...getAuthHeader() },
+      });
+      const json = await response.json();
+      return json.success ? json.data : null;
+    } catch (error) {
+      console.error('Error fetching analytics:', error);
+      return null;
     }
   },
 
@@ -95,12 +114,13 @@ export const StreamService = {
 
     try {
       const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 });
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 15000, enableHighAccuracy: true, maximumAge: 60000 });
       });
       formData.append('latitude', position.coords.latitude.toString());
       formData.append('longitude', position.coords.longitude.toString());
     } catch (e) {
-      console.warn("Could not get location for reel upload", e);
+      console.error("Location is required to upload a reel", e);
+      return { success: false };
     }
 
     try {
@@ -261,6 +281,24 @@ export const StreamService = {
       return json;
     } catch (error) {
       console.error('Error fetching user profile:', error);
+      return { success: false };
+    }
+  },
+
+  resolveReel: async (reelId: string, resolution: 'attended' | 'false_report' | 'pending'): Promise<{ success: boolean; data?: Stream }> => {
+    try {
+      const response = await fetch(`${API_URL}/${reelId}/resolve`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ resolution }),
+      });
+      const json = await response.json();
+      return json;
+    } catch (error) {
+      console.error('Error resolving reel:', error);
       return { success: false };
     }
   },

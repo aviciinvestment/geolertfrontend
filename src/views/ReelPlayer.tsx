@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Stream, StreamService } from '../services/StreamService';
-import { Heart, MessageCircle, Share2, Music, UserPlus, Volume2, VolumeX, Check, Eye, MapPin } from 'lucide-react';
+import { Heart, MessageCircle, Share2, UserPlus, Volume2, VolumeX, Check, Eye, MapPin } from 'lucide-react';
 import { CommentSection } from './CommentSection';
 import { useAudio } from '../context/AudioContext';
 
@@ -188,7 +188,7 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
       </button>
 
       {/* Right Sidebar Actions */}
-      <div className="absolute right-4 bottom-32 z-20 flex flex-col items-center gap-6">
+      <div className="absolute right-4 bottom-24 z-20 flex flex-col items-center gap-6">
         {stream.userId && !stream.isAnonymous && (
           <div
             className="relative group/avatar cursor-pointer"
@@ -243,7 +243,7 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
       </div>
 
       {/* Bottom Info Section */}
-      <div className="absolute bottom-[80px] left-0 w-full p-4 pb-2 bg-gradient-to-t from-black/80 via-black/40 to-transparent z-10 flex flex-col justify-end">
+      <div className="absolute bottom-0 left-0 w-full p-4 pb-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 flex flex-col justify-end">
         <h3 className="text-white font-bold text-lg mb-1">@{stream.username}</h3>
         <p className="text-white text-sm mb-3 w-[80%] line-clamp-2 leading-tight opacity-90">
           {stream.description}
@@ -265,12 +265,6 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
           <div className="flex items-center gap-1.5 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
             <Eye className="w-3.5 h-3.5 text-white/70" />
             <span className="text-white text-xs font-medium">{viewCount.toLocaleString()}</span>
-          </div>
-          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
-            <Music className="w-4 h-4 text-white animate-[spin_3s_linear_infinite]" />
-            <span className="text-white text-xs font-medium truncate max-w-[150px]">
-              Original Audio - @{stream.username}
-            </span>
           </div>
         </div>
       </div>

@@ -3,14 +3,16 @@ import react from '@vitejs/plugin-react-swc'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 import path from 'path'
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const apiTarget = mode === 'production'
     ? 'https://geolertbackend.onrender.com'
     : (process.env.VITE_API_URL || 'http://localhost:5000');
 
   return {
-    plugins: [react(), basicSsl()],
+    plugins: [
+      react(),
+      ...(mode === 'production' ? [] : [basicSsl()]),
+    ],
     resolve: {
       alias: {
         "@": path.resolve(__dirname, "./src"),
@@ -29,6 +31,10 @@ export default defineConfig(({ mode }) => {
           ws: true,
         },
       },
+    },
+    build: {
+      outDir: 'dist',
+      sourcemap: false,
     },
   }
 })

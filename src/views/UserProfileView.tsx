@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, User, Film, Eye, Play, X } from 'lucide-react';
+import { ArrowLeft, User, Film, Eye, Play, X, Shield } from 'lucide-react';
 import { StreamService, Stream, UserProfile } from '../services/StreamService';
 import { ReelPlayer } from './ReelPlayer';
 
@@ -162,6 +162,20 @@ export function UserProfileView({ userId, onBack }: UserProfileViewProps) {
             <div className="flex flex-col items-center">
               <span className="text-[20px] font-bold">{totalViews.toLocaleString()}</span>
               <span className="text-white/40 text-[12px] font-medium">Views</span>
+            </div>
+            <div className="w-[1px] h-8 bg-white/10" />
+            <div className="flex flex-col items-center">
+              <div className="flex items-center gap-1">
+                <Shield size={14} className={
+                  (profile.trustScore ?? 50) >= 70 ? 'text-emerald-400' :
+                  (profile.trustScore ?? 50) >= 40 ? 'text-amber-400' : 'text-red-400'
+                } />
+                <span className={`text-[20px] font-bold ${
+                  (profile.trustScore ?? 50) >= 70 ? 'text-emerald-400' :
+                  (profile.trustScore ?? 50) >= 40 ? 'text-amber-400' : 'text-red-400'
+                }`}>{profile.trustScore ?? 50}</span>
+              </div>
+              <span className="text-white/40 text-[12px] font-medium">Trust</span>
             </div>
           </div>
         </div>

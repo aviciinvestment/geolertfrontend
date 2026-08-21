@@ -5,26 +5,29 @@ import { Loader2 } from 'lucide-react';
 
 interface FeedViewProps {
   onProfileClick?: (userId: string) => void;
+  targetReelId?: string | null;
 }
 
-export function FeedView({ onProfileClick }: FeedViewProps) {
+export function FeedView({ onProfileClick, targetReelId }: FeedViewProps) {
   const { streams, loading, error, handleLike } = useFeedController();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (loading || streams.length === 0) return;
 
-    const path = window.location.pathname;
-    const match = path.match(/^\/reel\/(.+)$/);
-    if (match) {
-      const targetId = match[1];
-      const index = streams.findIndex(s => s._id === targetId);
-      if (index > 0 && containerRef.current) {
+    const id = targetReelId || (() => {
+      const match = window.location.pathname.match(/^\/reel\/(.+)$/);
+      return match ? match[1] : null;
+    })();
+
+    if (id) {
+      const index = streams.findIndex(s => s._id === id);
+      if (index >= 0 && containerRef.current) {
         const container = containerRef.current;
         container.scrollTo({ top: index * container.clientHeight, behavior: 'instant' });
       }
     }
-  }, [loading, streams]);
+  }, [loading, streams, targetReelId]);
 
   if (loading) {
     return (

@@ -5,6 +5,7 @@ export function useStreamController() {
   const [isStarting, setIsStarting] = useState(false);
   const [title, setTitle] = useState('');
   const [isAnonymous, setIsAnonymous] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<string | null>(null);
   
   const [isRecording, setIsRecording] = useState(false);
   const [timeLeft, setTimeLeft] = useState(10);
@@ -61,8 +62,12 @@ export function useStreamController() {
 
   const doUpload = async (file: File) => {
     setIsStarting(true);
+    setUploadStatus('Uploading video...');
+    // Delay to let the UI render the status before the heavy work begins
+    await new Promise(r => setTimeout(r, 100));
     const res = await StreamService.uploadReel(file, title || "My New Reel", isAnonymous);
     setIsStarting(false);
+    setUploadStatus(null);
     
     if (res.success && onUploadSuccessRef.current) {
       onUploadSuccessRef.current();
@@ -200,6 +205,7 @@ export function useStreamController() {
     setIsAnonymous,
     startRecording,
     stopRecording,
-    flipCamera
+    flipCamera,
+    uploadStatus,
   };
 }

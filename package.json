@@ -6,22 +6,31 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "start": "npx serve dist -s -l $PORT",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "server": "cd server && npm run dev",
+    "start:all": "echo Run 'npm run server' in one terminal and 'npm run dev' in another"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.1",
     "@radix-ui/react-scroll-area": "^1.1.0",
     "@radix-ui/react-slot": "^1.1.0",
+    "@react-leaflet/core": "^2.1.0",
     "@react-oauth/google": "^0.13.5",
+    "@types/leaflet": "^1.9.22",
     "axios": "^1.19.0",
     "clsx": "^2.1.1",
     "framer-motion": "^13.1.0",
     "jwt-decode": "^4.0.0",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.428.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
+    "react-is": "^19.2.8",
+    "react-leaflet": "^4.2.1",
     "react-router-dom": "^7.18.2",
+    "recharts": "^3.10.1",
     "socket.io-client": "^4.8.3",
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7"

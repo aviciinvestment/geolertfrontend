@@ -18,6 +18,7 @@ export function GoLiveView({ onCancel }: GoLiveViewProps) {
     flipCamera,
     isAnonymous,
     setIsAnonymous,
+    uploadStatus,
   } = useStreamController();
 
   return (
@@ -87,7 +88,7 @@ export function GoLiveView({ onCancel }: GoLiveViewProps) {
               {isStarting ? (
                 <>
                   <Loader2 className="w-6 h-6 animate-spin" />
-                  Uploading...
+                  {uploadStatus || 'Uploading...'}
                 </>
               ) : isRecording ? (
                 <>

@@ -39,6 +39,14 @@ export function useFeedController() {
       }
     });
 
+    socket.on('reel_analysis_updated', (data: { _id: string; aiAnalysis: Stream['aiAnalysis']; severity?: number }) => {
+      if (isMounted) {
+        setStreams(prev =>
+          prev.map(s => s._id === data._id ? { ...s, aiAnalysis: data.aiAnalysis, severity: data.severity } : s)
+        );
+      }
+    });
+
     return () => {
       isMounted = false;
       socket.disconnect();

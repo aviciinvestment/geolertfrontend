@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { FeedView } from './views/FeedView'
 import { GoLiveView } from './views/GoLiveView'
 import { AuthView } from './views/AuthView'
@@ -10,7 +10,9 @@ import { AudioProvider } from './context/AudioContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
-import { PlusCircle, Home, Settings } from 'lucide-react'
+
+import { PlusCircle, Home, Settings, MapPin, RefreshCw } from 'lucide-react'
+import { MissionPlannerView } from './views/MissionPlannerView'
 
 const GOOGLE_CLIENT_ID = 'your_google_client_id_here';
 
@@ -19,7 +21,11 @@ type View = 'feed' | 'golive' | 'settings' | 'profile';
 function ProtectedApp() {
   const [currentView, setCurrentView] = useState<View>('feed')
   const [profileUserId, setProfileUserId] = useState<string | null>(null)
+  const [locationGranted, setLocationGranted] = useState<boolean | null>(null)
+  const [locationError, setLocationError] = useState<string | null>(null)
   const { user, isLoading } = useAuth()
+  const loc = useLocation()
+  const targetReelId = (loc.state as { targetReelId?: string })?.targetReelId || null
 
   useEffect(() => {
     const path = window.location.pathname;
@@ -29,9 +35,37 @@ function ProtectedApp() {
     }
   }, []);
 
-  // Location tracking: watchPosition + periodic force-send every 15s
+  // Check geolocation permission and block app if denied
   useEffect(() => {
     if (!user) return;
+    if (!navigator.geolocation) {
+      setLocationGranted(false);
+      setLocationError('Geolocation is not supported by your browser.');
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setLocationGranted(true);
+        setLocationError(null);
+      },
+      (error) => {
+        setLocationGranted(false);
+        if (error.code === error.PERMISSION_DENIED) {
+          setLocationError('Location permission denied. GeoAlert requires location access to show you alerts within 30 miles. Please enable location in your browser/device settings and reload.');
+        } else if (error.code === error.POSITION_UNAVAILABLE) {
+          setLocationError('Location information unavailable. Please ensure your device has GPS enabled.');
+        } else {
+          setLocationError('Location request timed out. Please check your connection and try again.');
+        }
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    );
+  }, [user]);
+
+  // Location tracking: watchPosition + periodic force-send every 15s
+  useEffect(() => {
+    if (!user || !locationGranted) return;
     if (!navigator.geolocation) return;
 
     const sendLocation = async (lat: number, lng: number) => {
@@ -88,6 +122,35 @@ function ProtectedApp() {
     return <Navigate to="/login" replace />
   }
 
+  // Block app if location is not granted
+  if (locationGranted === false) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="max-w-sm w-full text-center space-y-6">
+          <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
+            <MapPin className="w-10 h-10 text-red-400" />
+          </div>
+          <div>
+            <h2 className="text-white text-xl font-bold mb-2">Location Required</h2>
+            <p className="text-white/60 text-sm leading-relaxed">
+              {locationError || 'GeoAlert needs your location to show you nearby alerts within 30 miles.'}
+            </p>
+          </div>
+          <button
+            onClick={() => window.location.reload()}
+            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white text-sm font-medium transition-colors"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+          <p className="text-white/30 text-xs">
+            After enabling location in your browser settings, click retry.
+          </p>
+        </div>
+      </div>
+    )
+  }
+
   const navigateToProfile = (userId: string) => {
     setProfileUserId(userId);
     setCurrentView('profile');
@@ -99,14 +162,15 @@ function ProtectedApp() {
         return <GoLiveView onCancel={() => setCurrentView('feed')} />;
       case 'settings':
         return <SettingsView onBack={() => setCurrentView('feed')} />;
+
       case 'profile':
         return profileUserId ? (
           <UserProfileView userId={profileUserId} onBack={() => setCurrentView('feed')} />
         ) : (
-          <FeedView onProfileClick={navigateToProfile} />
+          <FeedView onProfileClick={navigateToProfile} targetReelId={targetReelId} />
         );
       default:
-        return <FeedView onProfileClick={navigateToProfile} />;
+        return <FeedView onProfileClick={navigateToProfile} targetReelId={targetReelId} />;
     }
   };
 
@@ -136,6 +200,7 @@ function ProtectedApp() {
             </div>
           </button>
 
+
           <button
             onClick={() => setCurrentView('settings')}
             className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${currentView === 'settings' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
@@ -149,22 +214,37 @@ function ProtectedApp() {
   )
 }
 
+function ProtectedAuthority() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  return <MissionPlannerView />
+}
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <ThemeProvider defaultTheme="dark" storageKey="geolert-theme">
         <BrowserRouter>
-          <AuthProvider>
-            <AudioProvider>
-              <Routes>
-                <Route path="/" element={<LandingView />} />
-                <Route path="/login" element={<AuthView />} />
-                <Route path="/app/*" element={<ProtectedApp />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AudioProvider>
-          </AuthProvider>
-        </BrowserRouter>
+            <AuthProvider>
+              <AudioProvider>
+                <Routes>
+                  <Route path="/" element={<LandingView />} />
+                  <Route path="/login" element={<AuthView />} />
+                  <Route path="/app/*" element={<ProtectedApp />} />
+                  <Route path="/authority" element={<ProtectedAuthority />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </AudioProvider>
+            </AuthProvider>
+          </BrowserRouter>
       </ThemeProvider>
     </GoogleOAuthProvider>
   )
