@@ -14,7 +14,7 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import { PlusCircle, Home, Settings, MapPin, RefreshCw } from 'lucide-react'
 import { MissionPlannerView } from './views/MissionPlannerView'
 
-const GOOGLE_CLIENT_ID = 'your_google_client_id_here';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 type View = 'feed' | 'golive' | 'settings' | 'profile';
 
