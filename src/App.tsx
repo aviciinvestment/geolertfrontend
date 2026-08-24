@@ -10,9 +10,16 @@ import { AudioProvider } from './context/AudioContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { LocationReporter } from './components/LocationReporter'
 
 import { PlusCircle, Home, Settings, MapPin, RefreshCw } from 'lucide-react'
 import { MissionPlannerView } from './views/MissionPlannerView'
+import { AdminLayout } from './components/AdminLayout'
+import { SuperAdminDashboard } from './views/admin/SuperAdminDashboard'
+import { AdminDashboard } from './views/admin/AdminDashboard'
+import { OnboardSuperAdmin } from './views/admin/OnboardSuperAdmin'
+import { OnboardAdmin } from './views/admin/OnboardAdmin'
+import { OnboardResponder } from './views/admin/OnboardResponder'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -63,56 +70,8 @@ function ProtectedApp() {
     );
   }, [user]);
 
-  // Location tracking: watchPosition + periodic force-send every 15s
-  useEffect(() => {
-    if (!user || !locationGranted) return;
-    if (!navigator.geolocation) return;
-
-    const sendLocation = async (lat: number, lng: number) => {
-      const token = localStorage.getItem('geolert_token');
-      if (token) {
-        try {
-          await fetch(`${import.meta.env.VITE_API_URL}/api/auth/location`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ latitude: lat, longitude: lng })
-          });
-        } catch (error) {
-          console.error('Failed to update location', error);
-        }
-      }
-    };
-
-    // watchPosition for continuous tracking
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        sendLocation(position.coords.latitude, position.coords.longitude);
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-      },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
-    );
-
-    // Also force-send every 15 seconds for cases where watchPosition doesn't fire
-    const intervalId = setInterval(() => {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          sendLocation(position.coords.latitude, position.coords.longitude);
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 5000 }
-      );
-    }, 15000);
-
-    return () => {
-      navigator.geolocation.clearWatch(watchId);
-      clearInterval(intervalId);
-    };
-  }, [user]);
+  // Location tracking is handled globally by <LocationReporter /> so that
+  // every role (including admins on dashboard pages) reports GPS location.
 
   if (isLoading) {
     return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
@@ -182,7 +141,8 @@ function ProtectedApp() {
           {renderView()}
         </main>
 
-        <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] h-[72px] bg-black/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around z-50 pb-safe">
+        {currentView !== 'golive' && (
+          <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] h-[72px] bg-black/80 backdrop-blur-2xl border-t border-white/10 flex items-center justify-around z-50 pb-safe">
           <button
             onClick={() => setCurrentView('feed')}
             className={`flex flex-col items-center justify-center w-16 h-full transition-colors ${currentView === 'feed' ? 'text-white' : 'text-white/40 hover:text-white/70'}`}
@@ -208,7 +168,8 @@ function ProtectedApp() {
             <Settings className="w-[26px] h-[26px] mb-1" />
             <span className="text-[10px] font-medium tracking-wide">Settings</span>
           </button>
-        </nav>
+          </nav>
+        )}
       </div>
     </div>
   )
@@ -221,25 +182,82 @@ function ProtectedAuthority() {
     return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
   }
 
-  if (!user) {
-    return <Navigate to="/login" replace />
+  // Only fully authorized Authority Responders may enter
+  const isAuthorizedAuthority =
+    user && user.role === 'authority' && user.authorizationStatus === 'approved'
+
+  if (!isAuthorizedAuthority) {
+    return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />
   }
 
   return <MissionPlannerView />
+}
+
+function homeForRole(role?: string): string {
+  switch (role) {
+    case 'superadmin':
+      return '/superadmin'
+    case 'admin':
+      return '/admin'
+    case 'authority':
+      return '/authority'
+    default:
+      return '/app'
+  }
+}
+
+function ProtectedAdmin({ role }: { role: 'superadmin' | 'admin' }) {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
+  }
+
+  // Only an authorized account holding the exact role may enter.
+  // Super Admin dashboard -> role 'superadmin' (self-onboarded via registration)
+  // Admin dashboard       -> role 'admin'      (must be authorized by Super Admin first)
+  const isAuthorized =
+    user && user.role === role && user.authorizationStatus === 'approved'
+
+  if (!isAuthorized) {
+    return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />
+  }
+
+  return (
+    <AdminLayout role={role}>
+      <Routes>
+        {role === 'superadmin' ? (
+          <>
+            <Route path="/" element={<SuperAdminDashboard />} />
+            <Route path="/onboard-super" element={<OnboardSuperAdmin />} />
+            <Route path="/onboard-admin" element={<OnboardAdmin />} />
+          </>
+        ) : (
+          <>
+            <Route path="/" element={<AdminDashboard />} />
+            <Route path="/onboard-responder" element={<OnboardResponder />} />
+          </>
+        )}
+      </Routes>
+    </AdminLayout>
+  )
 }
 
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
       <ThemeProvider defaultTheme="dark" storageKey="geolert-theme">
-        <BrowserRouter>
+          <BrowserRouter>
             <AuthProvider>
+              <LocationReporter />
               <AudioProvider>
                 <Routes>
                   <Route path="/" element={<LandingView />} />
                   <Route path="/login" element={<AuthView />} />
                   <Route path="/app/*" element={<ProtectedApp />} />
                   <Route path="/authority" element={<ProtectedAuthority />} />
+                  <Route path="/superadmin/*" element={<ProtectedAdmin role="superadmin" />} />
+                  <Route path="/admin/*" element={<ProtectedAdmin role="admin" />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AudioProvider>

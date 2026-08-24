@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Stream, StreamService } from '../services/StreamService';
-import { Heart, MessageCircle, Share2, UserPlus, Volume2, VolumeX, Check, Eye, MapPin } from 'lucide-react';
+import { Heart, MessageCircle, Share2, UserPlus, Volume2, VolumeX, Check, Eye, MapPin, Play } from 'lucide-react';
 import { CommentSection } from './CommentSection';
 import { useAudio } from '../context/AudioContext';
 
@@ -8,11 +8,13 @@ interface ReelPlayerProps {
   stream: Stream;
   onLike: () => void;
   onProfileClick: (userId: string) => void;
+  compact?: boolean;
 }
 
-export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) {
+export function ReelPlayer({ stream, onLike, onProfileClick, compact }: ReelPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [is2x, setIs2x] = useState(false);
   const [isLiked, setIsLiked] = useState(stream.isLikedByMe || false);
   const [showHeartAnim, setShowHeartAnim] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -31,6 +33,12 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
       videoRef.current.muted = muted;
     }
   }, [muted]);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.playbackRate = is2x ? 2 : 1;
+    }
+  }, [is2x]);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -73,6 +81,11 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
       }
       setIsPlaying(!isPlaying);
     }
+  };
+
+  const handleSpeedToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIs2x((prev) => !prev);
   };
 
   const handleMuteToggle = (e: React.MouseEvent) => {
@@ -179,16 +192,37 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
         </div>
       )}
 
-      {/* Mute Toggle */}
-      <button
-        onClick={handleMuteToggle}
-        className="absolute top-4 right-4 z-20 p-2 bg-black/30 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors"
-      >
-        {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-      </button>
+      {/* Paused Indicator */}
+      {!isPlaying && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <div className="w-16 h-16 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+            <Play className="w-8 h-8 text-white fill-white" />
+          </div>
+        </div>
+      )}
+
+      {/* Speed + Mute Toggles */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <button
+          onClick={handleSpeedToggle}
+          className={`px-2.5 py-1.5 backdrop-blur-sm rounded-full text-xs font-bold transition-colors ${
+            is2x
+              ? 'bg-white text-black'
+              : 'bg-black/30 text-white/80 hover:text-white'
+          }`}
+        >
+          {is2x ? '2x' : '1x'}
+        </button>
+        <button
+          onClick={handleMuteToggle}
+          className="p-2 bg-black/30 backdrop-blur-sm rounded-full text-white/80 hover:text-white transition-colors"
+        >
+          {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+      </div>
 
       {/* Right Sidebar Actions */}
-      <div className="absolute right-4 bottom-24 z-20 flex flex-col items-center gap-6">
+      <div className={`absolute right-4 z-20 flex flex-col items-center gap-6 ${compact ? 'bottom-4' : 'bottom-[88px]'}`}>
         {stream.userId && !stream.isAnonymous && (
           <div
             className="relative group/avatar cursor-pointer"
@@ -243,9 +277,9 @@ export function ReelPlayer({ stream, onLike, onProfileClick }: ReelPlayerProps) 
       </div>
 
       {/* Bottom Info Section */}
-      <div className="absolute bottom-0 left-0 w-full p-4 pb-3 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 flex flex-col justify-end">
+      <div className={`absolute left-0 w-full p-4 pb-3 pr-20 bg-gradient-to-t from-black/90 via-black/50 to-transparent z-10 flex flex-col justify-end ${compact ? 'bottom-0' : 'bottom-[72px]'}`}>
         <h3 className="text-white font-bold text-lg mb-1">@{stream.username}</h3>
-        <p className="text-white text-sm mb-3 w-[80%] line-clamp-2 leading-tight opacity-90">
+        <p className="text-white text-sm mb-3 w-full line-clamp-2 leading-tight opacity-90">
           {stream.description}
         </p>
         <div className="flex flex-wrap items-center gap-3">

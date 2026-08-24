@@ -10,14 +10,23 @@ export function useFeedController() {
   useEffect(() => {
     let isMounted = true;
 
-    const fetchFeed = async () => {
+    const fetchFeed = async (attempt = 0): Promise<void> => {
       try {
         setLoading(true);
         const data = await StreamService.getFeed();
-        if (isMounted) {
-          setStreams(data);
-          setError(null);
+        if (!isMounted) return;
+
+        if (data.length === 0 && attempt < 2) {
+          // Feed may be empty because the user's GPS location hasn't
+          // reached the backend yet — retry shortly before giving up.
+          setTimeout(() => {
+            if (isMounted) fetchFeed(attempt + 1);
+          }, 4000);
+          return;
         }
+
+        setStreams(data);
+        setError(null);
       } catch (err) {
         if (isMounted) {
           setError('Failed to load feed.');

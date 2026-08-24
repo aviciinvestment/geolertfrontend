@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+export type UserRole = 'user' | 'authority' | 'admin' | 'superadmin';
+
 interface User {
   id: string;
   name: string;
@@ -7,6 +9,13 @@ interface User {
   avatar?: string;
   bio?: string;
   isAnonymous?: boolean;
+  role?: UserRole;
+  authorizationStatus?: 'pending' | 'approved' | 'rejected';
+  jurisdiction?: {
+    country?: string;
+    state?: string;
+    lga?: string;
+  };
 }
 
 interface AuthContextType {

@@ -6,6 +6,19 @@ import { useNavigate } from 'react-router-dom';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 
+const homeForRole = (role?: string): string => {
+  switch (role) {
+    case 'superadmin':
+      return '/superadmin';
+    case 'admin':
+      return '/admin';
+    case 'authority':
+      return '/authority';
+    default:
+      return '/app';
+  }
+};
+
 export const AuthView: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -29,7 +42,7 @@ export const AuthView: React.FC = () => {
 
       if (response.data.success) {
         login(response.data.user, response.data.token);
-        navigate('/app', { replace: true });
+        navigate(homeForRole(response.data.user?.role), { replace: true });
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Authentication failed. Please try again.');
@@ -46,7 +59,7 @@ export const AuthView: React.FC = () => {
 
       if (response.data.success) {
         login(response.data.user, response.data.token);
-        navigate('/app', { replace: true });
+        navigate(homeForRole(response.data.user?.role), { replace: true });
       }
     } catch (err) {
       console.error('Google login failed', err);

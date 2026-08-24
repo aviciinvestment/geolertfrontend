@@ -67,7 +67,7 @@ export function GoLiveView({ onCancel }: GoLiveViewProps) {
         <div className="flex-1" />
 
         {/* Controls */}
-        <div className="p-6 pb-20">
+        <div className="p-6 pb-8">
           <div className="mb-6">
             <input
               type="text"

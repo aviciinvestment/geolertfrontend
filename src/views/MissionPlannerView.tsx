@@ -957,6 +957,7 @@ export function MissionPlannerView() {
                   <div className="flex-1 min-h-0 mx-3 bg-black rounded-2xl overflow-hidden border border-white/5 relative shadow-xl">
                     <ReelPlayer
                       stream={selectedReel}
+                      compact
                       onLike={() => {
                         setSelectedReel(prev => prev ? { ...prev, likes: prev.likes + 1, isLikedByMe: true } : prev);
                         StreamService.likeReel(selectedReel._id);
@@ -969,19 +970,66 @@ export function MissionPlannerView() {
                   <div className="flex-shrink-0 max-h-[30%] overflow-y-auto no-scrollbar px-3 pb-3 pt-2 space-y-2">
                     {/* Current message card - expandable */}
                     <div className="bg-[#1a1e24] border border-white/5 rounded-xl p-3">
-                      <h3 className="text-[10px] font-semibold text-gray-400 tracking-wider mb-2 uppercase">Current Message</h3>
+                      <h3 className="text-[10px] font-semibold text-gray-400 tracking-wider mb-2 uppercase">Occurrence Narration</h3>
                       <div className="bg-[#111317] rounded-lg p-2.5 flex gap-2.5">
                         <AlertTriangle size={16} className={selectedReel.severity! >= 0.7 ? 'text-red-500' : 'text-yellow-500'} />
                         <div className="flex-1 min-w-0">
-                          <p className={`text-[12px] text-gray-200 leading-relaxed font-medium ${!messageExpanded ? 'line-clamp-2' : ''}`}>
+                          {/* Lead narration — AI summary or reporter caption */}
+                          <p className={`text-[12px] text-gray-100 leading-relaxed font-medium ${!messageExpanded ? 'line-clamp-2' : ''}`}>
                             {renderFormattedText(selectedReel.aiAnalysis?.summary || selectedReel.description || 'No details available')}
                           </p>
-                          <button
-                            onClick={() => setMessageExpanded(prev => !prev)}
-                            className="text-[10px] text-blue-400 hover:text-blue-300 font-medium mt-1 transition-colors"
-                          >
-                            {messageExpanded ? 'See less' : 'See more'}
-                          </button>
+
+                          {/* Full narration revealed on expand */}
+                          {messageExpanded && (
+                            <div className="mt-2 space-y-2">
+                              {selectedReel.aiAnalysis?.severityReason && (
+                                <div>
+                                  <p className="text-[9px] font-bold text-gray-500 tracking-wider uppercase mb-0.5">Why it's rated {severityLabel(selectedReel.severity ?? 0)}</p>
+                                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                                    {renderFormattedText(selectedReel.aiAnalysis.severityReason)}
+                                  </p>
+                                </div>
+                              )}
+                              {selectedReel.aiAnalysis?.description && (
+                                <div>
+                                  <p className="text-[9px] font-bold text-gray-500 tracking-wider uppercase mb-0.5">What was captured</p>
+                                  <p className="text-[11px] text-gray-300 leading-relaxed">
+                                    {renderFormattedText(selectedReel.aiAnalysis.description)}
+                                  </p>
+                                </div>
+                              )}
+                              {selectedReel.aiAnalysis?.transcript && (
+                                <div>
+                                  <p className="text-[9px] font-bold text-gray-500 tracking-wider uppercase mb-0.5">Voice transcript</p>
+                                  <blockquote className="border-l-2 border-blue-500/50 pl-2 py-0.5 text-[11px] italic text-gray-400 leading-relaxed">
+                                    "{renderFormattedText(selectedReel.aiAnalysis.transcript)}"
+                                  </blockquote>
+                                </div>
+                              )}
+                              {selectedReel.aiAnalysis?.summary && selectedReel.description && (
+                                <div>
+                                  <p className="text-[9px] font-bold text-gray-500 tracking-wider uppercase mb-0.5">Reporter's caption</p>
+                                  <p className="text-[11px] text-gray-400 leading-relaxed">
+                                    {renderFormattedText(selectedReel.description)}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {(messageExpanded ||
+                            selectedReel.aiAnalysis?.severityReason ||
+                            selectedReel.aiAnalysis?.description ||
+                            selectedReel.aiAnalysis?.transcript ||
+                            (selectedReel.aiAnalysis?.summary && selectedReel.description) ||
+                            (!selectedReel.aiAnalysis?.summary && selectedReel.description && selectedReel.description.length > 90)) && (
+                            <button
+                              onClick={() => setMessageExpanded(prev => !prev)}
+                              className="text-[10px] text-blue-400 hover:text-blue-300 font-medium mt-1 transition-colors"
+                            >
+                              {messageExpanded ? 'See less' : 'See full narration'}
+                            </button>
+                          )}
                         </div>
                       </div>
                     </div>

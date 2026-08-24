@@ -22,6 +22,51 @@ export interface Stream {
   status?: 'pending' | 'attended' | 'false_report';
 }
 
+export interface JurisdictionMapReel {
+  _id: string;
+  lat: number;
+  lng: number;
+  severity: number;
+  status: 'pending' | 'attended' | 'false_report';
+  description?: string;
+  aiSummary?: string;
+  url: string;
+  avatar?: string;
+  username: string;
+  isAnonymous: boolean;
+  area?: string;
+  createdAt: string;
+  views?: number;
+  likes?: number;
+  comments?: number;
+}
+
+export interface JurisdictionDashboard {
+  scope: { country: string | null; state: string | null; lga: string | null };
+  areas: string[];
+  stats: {
+    activeEmergencies: number;
+    catered: number;
+    uncatered: number;
+    falseReports: number;
+    respondersDeployed: number;
+  };
+  severityBreakdown: { name: string; value: number; color: string }[];
+  activityData: { time: string; incidents: number }[];
+  mapReels: JurisdictionMapReel[];
+  pendingEmergencies: {
+    id: string;
+    reelId: string;
+    area?: string;
+    lat: number;
+    lng: number;
+    severity: number;
+    reporter: string;
+    createdAt: string;
+  }[];
+  center: [number, number] | null;
+}
+
 export interface Comment {
   _id: string;
   reelId: string;
@@ -77,6 +122,20 @@ export const StreamService = {
       return json.success ? json.data : null;
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      return null;
+    }
+  },
+
+  getJurisdictionDashboard: async (lga?: string): Promise<JurisdictionDashboard | null> => {
+    try {
+      const qs = lga && lga !== '__all__' ? `?lga=${encodeURIComponent(lga)}` : '';
+      const response = await fetch(`${API_URL}/jurisdiction${qs}`, {
+        headers: { ...getAuthHeader() },
+      });
+      const json = await response.json();
+      return json.success ? json.data : null;
+    } catch (error) {
+      console.error('Error fetching jurisdiction dashboard:', error);
       return null;
     }
   },
