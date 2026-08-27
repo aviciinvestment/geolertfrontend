@@ -141,7 +141,7 @@ const LandingView: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: "-100px" }}
             transition={{ duration: 1, ease: "easeOut" }}
-            className="relative rounded-[40px] border-[12px] border-black shadow-2xl overflow-hidden aspect-[9/16] sm:aspect-video bg-zinc-900"
+            className="relative keep-dark rounded-[40px] border-[12px] border-black shadow-2xl overflow-hidden aspect-[9/16] sm:aspect-video bg-zinc-900"
           >
             {/* Simulated UI inside mockup */}
             <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1542282088-72c9c27ed0cd?auto=format&fit=crop&q=80&w=2000')] bg-cover bg-center opacity-40"></div>

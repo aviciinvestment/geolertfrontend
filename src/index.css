@@ -75,3 +75,183 @@
   height: 100%;
   background: #000;
 }
+
+/* ============================================================
+   Light mode — driven by the single dark/light toggle on the
+   home page. Defaults to dark; when html.light is set the whole
+   app (reel app, authority, admin, super admin, auth) switches
+   to light surfaces while keeping themed accents intact.
+   ============================================================ */
+
+/* Immersive video/mockup surfaces stay dark in light mode */
+html.light .keep-dark {
+  background-color: #0a0a0a !important;
+  border-color: #000 !important;
+}
+html.light .keep-dark .text-white,
+html.light .keep-dark .text-white\/30,
+html.light .keep-dark .text-white\/40,
+html.light .keep-dark .text-white\/50,
+html.light .keep-dark .text-white\/60,
+html.light .keep-dark .text-white\/70,
+html.light .keep-dark .text-white\/80,
+html.light .keep-dark .text-white\/90 {
+  color: #fff !important;
+}
+html.light .keep-dark .text-black {
+  color: #000 !important;
+}
+html.light .keep-dark .bg-white\/90 {
+  background-color: #fff !important;
+}
+html.light .keep-dark .bg-black\/20,
+html.light .keep-dark .bg-black\/30,
+html.light .keep-dark .bg-black\/40,
+html.light .keep-dark .bg-black\/60,
+html.light .keep-dark .bg-black\/80,
+html.light .keep-dark .bg-white\/5,
+html.light .keep-dark .bg-white\/10 {
+  background-color: rgb(255 255 255 / 0.12) !important;
+}
+html.light .keep-dark .border-white\/5,
+html.light .keep-dark .border-white\/10,
+html.light .keep-dark .border-white\/20 {
+  border-color: rgb(255 255 255 / 0.15) !important;
+}
+
+/* Shell surfaces */
+html.light .bg-black,
+html.light .bg-\[\#000000\],
+html.light .bg-\[\#0d0d0d\],
+html.light .bg-\[\#121014\],
+html.light .bg-\[\#111111\],
+html.light .bg-\[\#121212\],
+html.light .bg-\[\#161a20\],
+html.light .bg-\[\#1a1e24\] {
+  background-color: #ffffff !important;
+}
+html.light .bg-zinc-950,
+html.light .bg-\[\#0a0a0a\],
+html.light .bg-\[\#0A0A0A\],
+html.light .bg-\[\#0b0e14\],
+html.light .bg-\[\#1a1a1a\],
+html.light .bg-\[\#151515\],
+html.light .bg-\[\#111317\] {
+  background-color: #f5f5f5 !important;
+}
+html.light .bg-\[\#1f1f1f\],
+html.light .bg-\[\#2f2f2f\] {
+  background-color: #e4e4e7 !important;
+}
+html.light .bg-gray-900\/50 {
+  background-color: rgb(228 228 231 / 0.6) !important;
+}
+
+/* Hex fills used only by admin/super admin/authority pages (incl. onboards) */
+html.light .bg-\[\#161616\],
+html.light .bg-\[\#1e1e1e\] {
+  background-color: #f5f5f5 !important;
+}
+
+/* Translucent dark fills used by admin page chrome (header, toasts, sidebars) */
+html.light .bg-black\/70 {
+  background-color: rgb(255 255 255 / 0.85) !important;
+}
+html.light .bg-\[\#161a20\]\/95,
+html.light .bg-\[\#1a1e24\]\/95 {
+  background-color: rgb(255 255 255 / 0.96) !important;
+}
+html.light .bg-\[\#121212\]\/90 {
+  background-color: rgb(255 255 255 / 0.9) !important;
+}
+html.light .bg-\[\#0d0d0d\]\/95 {
+  background-color: rgb(255 255 255 / 0.96) !important;
+}
+html.light .bg-\[\#121014\]\/50 {
+  background-color: rgb(255 255 255 / 0.55) !important;
+}
+html.light .bg-\[\#1f1f1f\]\/50 {
+  background-color: rgb(228 228 231 / 0.6) !important;
+}
+html.light .bg-\[\#000000\]\/50 {
+  background-color: rgb(255 255 255 / 0.7) !important;
+}
+html.light .bg-\[\#0A0A0A\]\/80 {
+  background-color: rgb(245 245 245 / 0.85) !important;
+}
+
+/* Translucent white fills → light gray in light mode */
+html.light .bg-white\/5,
+html.light .bg-white\/\[0\.03\] {
+  background-color: rgb(0 0 0 / 0.05) !important;
+}
+html.light .bg-white\/10 {
+  background-color: rgb(0 0 0 / 0.07) !important;
+}
+html.light .bg-white\/20 {
+  background-color: rgb(0 0 0 / 0.1) !important;
+}
+html.light .bg-black\/20 { background-color: rgb(255 255 255 / 0.25) !important; }
+html.light .bg-black\/30 { background-color: rgb(255 255 255 / 0.35) !important; }
+html.light .bg-black\/40 { background-color: rgb(255 255 255 / 0.45) !important; }
+html.light .bg-black\/60 { background-color: rgb(255 255 255 / 0.6) !important; }
+html.light .bg-black\/80 { background-color: rgb(255 255 255 / 0.85) !important; }
+html.light .bg-black\/90 { background-color: rgb(255 255 255 / 0.95) !important; }
+
+/* Primary text */
+html.light .text-white { color: #09090b !important; }
+html.light .text-white\/30 { color: rgb(9 9 11 / 0.3) !important; }
+html.light .text-white\/40 { color: rgb(9 9 11 / 0.4) !important; }
+html.light .text-white\/50 { color: rgb(9 9 11 / 0.5) !important; }
+html.light .text-white\/60 { color: rgb(9 9 11 / 0.6) !important; }
+html.light .text-white\/70 { color: rgb(9 9 11 / 0.7) !important; }
+html.light .text-white\/80 { color: rgb(9 9 11 / 0.85) !important; }
+html.light .text-white\/90 { color: #09090b !important; }
+
+/* Secondary text */
+html.light .text-gray-100 { color: #18181b !important; }
+html.light .text-gray-200 { color: #18181b !important; }
+html.light .text-gray-300 { color: #3f3f46 !important; }
+html.light .text-gray-400 { color: #52525b !important; }
+html.light .text-gray-500 { color: #71717a !important; }
+html.light .text-gray-600 { color: #57575e !important; }
+
+/* Placeholders */
+html.light .placeholder\:text-white\/30::placeholder,
+html.light .placeholder\:text-white\/40::placeholder,
+html.light .placeholder\:text-white\/50::placeholder,
+html.light .placeholder-white\/30::placeholder,
+html.light .placeholder-white\/40::placeholder,
+html.light .placeholder-white\/50::placeholder {
+  color: rgb(113 113 122 / 0.6) !important;
+}
+
+/* Borders */
+html.light .border-white\/5 { border-color: rgb(0 0 0 / 0.08) !important; }
+html.light .border-white\/10 { border-color: rgb(0 0 0 / 0.1) !important; }
+html.light .border-white\/20 { border-color: rgb(0 0 0 / 0.14) !important; }
+html.light .border-white\/30 { border-color: rgb(0 0 0 / 0.18) !important; }
+html.light .border-white\/50,
+html.light .focus\:border-white\/50:focus { border-color: rgb(0 0 0 / 0.4) !important; }
+html.light .border-gray-700 { border-color: #d4d4d8 !important; }
+html.light .border-gray-800 { border-color: #e4e4e7 !important; }
+html.light .border-\[\#1f1f1f\] { border-color: #e5e7eb !important; }
+html.light .border-\[\#1f1f1f\]\/50 { border-color: rgb(229 231 235 / 0.9) !important; }
+html.light .border-\[\#2f2f2f\],
+html.light .hover\:border-\[\#2f2f2f\]:hover { border-color: #d4d4d8 !important; }
+html.light .border-gray-600 { border-color: #d4d4d8 !important; }
+html.light .hover\:border-gray-600:hover { border-color: #a1a1aa !important; }
+html.light .divide-\[\#1f1f1f\]\/60 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgb(229 231 235 / 0.6) !important;
+}
+html.light .hover\:bg-\[\#1f1f1f\]:hover,
+html.light .hover\:bg-\[\#1f1f1f\]\/30:hover {
+  background-color: rgb(0 0 0 / 0.06) !important;
+}
+html.light .hover\:bg-white\/10:hover,
+html.light .hover\:bg-white\/5:hover {
+  background-color: rgb(0 0 0 / 0.06) !important;
+}
+html.light .focus\:ring-white\/50:focus {
+  --tw-ring-color: rgb(0 0 0 / 0.35) !important;
+}

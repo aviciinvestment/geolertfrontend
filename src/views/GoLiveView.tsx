@@ -22,7 +22,7 @@ export function GoLiveView({ onCancel }: GoLiveViewProps) {
   } = useStreamController();
 
   return (
-    <div className="w-full h-full bg-black relative flex flex-col">
+    <div className="w-full h-full bg-black keep-dark relative flex flex-col">
       <video 
         ref={videoRef} 
         autoPlay 

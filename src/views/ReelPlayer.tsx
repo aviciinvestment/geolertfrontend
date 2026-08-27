@@ -153,7 +153,7 @@ export function ReelPlayer({ stream, onLike, onProfileClick, compact }: ReelPlay
   }
 
   return (
-    <div className="w-full h-full relative bg-black group" onClick={handleDoubleTap}>
+    <div className="w-full h-full relative bg-black keep-dark group" onClick={handleDoubleTap}>
       {/* Video Element */}
       <video
         ref={videoRef}

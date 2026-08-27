@@ -1,13 +1,17 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { io } from 'socket.io-client';
+import { io, Socket } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Activity, ShieldAlert, Users, Radio, CheckCircle2, AlertTriangle, XCircle, MapPin, RefreshCw, Eye, Heart, MessageCircle, Navigation, X, Clock } from 'lucide-react';
+import { Activity, ShieldAlert, Users, Radio, CheckCircle2, AlertTriangle, XCircle, MapPin, RefreshCw, Eye, Heart, MessageCircle, Navigation, X, Clock, ChevronDown } from 'lucide-react';
+import { categoryLabel } from '../../constants/incidentCategories';
 import L from 'leaflet';
 import { PendingApprovals } from '../../components/PendingApprovals';
-import { StreamService, JurisdictionDashboard, JurisdictionMapReel, Stream } from '../../services/StreamService';
+import { BroadcastModal } from '../../components/BroadcastModal';
+import { ReportsList } from '../../components/ReportsList';
+import { NotificationToasts } from '../../components/NotificationToasts';
+import { StreamService, JurisdictionDashboard, JurisdictionMapReel, JurisdictionReport, Subordinate, Stream } from '../../services/StreamService';
 import { ReelPlayer } from '../ReelPlayer';
 
 function severityColor(severity: number): string {
@@ -87,6 +91,11 @@ export const AdminDashboard: React.FC = () => {
   const [selectedIncident, setSelectedIncident] = useState<JurisdictionMapReel | null>(null);
   const [incidentAddress, setIncidentAddress] = useState('');
   const [messageExpanded, setMessageExpanded] = useState(false);
+  const [authorities, setAuthorities] = useState<Subordinate[]>([]);
+  const [authorityId, setAuthorityId] = useState<string>('');
+  const [showBroadcast, setShowBroadcast] = useState(false);
+  const [broadcastConfirmation, setBroadcastConfirmation] = useState<string | null>(null);
+  const [liveSocket, setLiveSocket] = useState<Socket | null>(null);
 
   // Admins are permanently scoped to the State + LGA they were onboarded for.
   const adminState = user?.jurisdiction?.state || data?.scope?.state || '';
@@ -96,11 +105,21 @@ export const AdminDashboard: React.FC = () => {
     ? `${adminLga ? `${adminLga} LGA, ` : ''}${adminState}${user?.jurisdiction?.country ? `, ${user.jurisdiction.country}` : ''}`
     : 'your jurisdiction';
 
+  const selectedAuthority = authorities.find((a) => a.id === authorityId);
+  const recipientLabel =
+    selectedAuthority?.name ??
+    `All ${authorities.length} authorities${authorities.length > 0 ? ' under you' : ''}`;
+  const recipientHint = selectedAuthority
+    ? `${selectedAuthority.jurisdiction?.lga ? `${selectedAuthority.jurisdiction.lga} LGA, ` : ''}${selectedAuthority.jurisdiction?.state || ''}`
+    : 'Every approved authority responder under your jurisdiction';
+
   const fetchData = useCallback(async () => {
     try {
       setError(null);
-      // The backend hard-scopes admins to their stored LGA.
-      const result = await StreamService.getJurisdictionDashboard();
+      // Narrow the whole dashboard to one authority's reports when selected.
+      const result = await StreamService.getJurisdictionDashboard(undefined, {
+        authorityId: authorityId || undefined,
+      });
       if (result) {
         setData(result);
       } else {
@@ -111,6 +130,12 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  }, [authorityId]);
+
+  const refreshAuthorities = useCallback(async () => {
+    const subs = await StreamService.getSubordinates();
+    setAuthorities(subs);
+    setAuthorityId((prev) => (prev && !subs.some((s) => s.id === prev) ? '' : prev));
   }, []);
 
   useEffect(() => {
@@ -118,15 +143,32 @@ export const AdminDashboard: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
+  useEffect(() => {
+    refreshAuthorities();
+  }, [refreshAuthorities]);
+
   // Stay live: refetch whenever a new emergency report hits the network
   useEffect(() => {
     const socket = io(import.meta.env.VITE_API_URL);
-    socket.on('new_reel', () => fetchData());
+    setLiveSocket(socket);
+    socket.on('new_reel', () => {
+      fetchData();
+      refreshAuthorities();
+    });
     return () => {
       socket.off('new_reel');
+      setLiveSocket(null);
       socket.disconnect();
     };
-  }, [fetchData]);
+  }, [fetchData, refreshAuthorities]);
+
+  // Refetch the authority list whenever the dashboard data changes so newly
+  // authorized responders appear in the filter dropdown.
+  useEffect(() => {
+    if (data && authorities.length === 0) return;
+    if (data) refreshAuthorities();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
 
   const handleAttend = async (reelId: string) => {
     setResolvingId(reelId);
@@ -136,6 +178,19 @@ export const AdminDashboard: React.FC = () => {
     } finally {
       setResolvingId(null);
     }
+  };
+
+  const handleBroadcast = async (message: string) => {
+    const target = authorityId || undefined;
+    const res = await StreamService.sendBroadcast(message, target);
+    if (res.success) {
+      const who = target ? selectedAuthority?.name : `all ${authorities.length} authorities`;
+      setBroadcastConfirmation(`Broadcast sent to ${who}.`);
+      setShowBroadcast(false);
+      setTimeout(() => setBroadcastConfirmation(null), 6000);
+      return true;
+    }
+    return false;
   };
 
   // Resolve a readable address for the selected incident (same as authority page)
@@ -180,6 +235,25 @@ export const AdminDashboard: React.FC = () => {
       comments: r.comments ?? 0,
     }) as Stream;
 
+  const reportToMapReel = (r: JurisdictionReport): JurisdictionMapReel => ({
+    _id: r._id,
+    lat: r.latitude,
+    lng: r.longitude,
+    severity: r.severity,
+    status: r.status,
+    description: r.description,
+    aiSummary: r.aiAnalysis?.summary || '',
+    url: r.url,
+    avatar: r.avatar,
+    username: r.username,
+    isAnonymous: r.isAnonymous,
+    area: r.area,
+    createdAt: r.createdAt,
+    views: r.views,
+    likes: r.likes,
+    comments: r.comments,
+  });
+
   const handlePanelResolve = async (
     resolution: 'attended' | 'false_report' | 'pending'
   ) => {
@@ -203,8 +277,8 @@ export const AdminDashboard: React.FC = () => {
   const activeMarkers = mapReels.filter((m) => m.status === 'pending');
 
   const statCards = [
-    { title: 'Active Emergencies', value: data?.stats.activeEmergencies, icon: AlertTriangle, color: 'text-fuchsia-400', bg: 'bg-fuchsia-500/10' },
-    { title: 'Responders Deployed', value: data?.stats.respondersDeployed, icon: Users, color: 'text-purple-400', bg: 'bg-purple-500/10' },
+    { title: 'Active Emergencies', value: data?.stats.activeEmergencies, icon: AlertTriangle, color: 'text-red-400', bg: 'bg-red-500/10' },
+    { title: 'Responders Deployed', value: data?.stats.respondersDeployed, icon: Users, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { title: 'Catered Emergencies', value: data?.stats.catered, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { title: 'Pending Emergencies', value: data?.stats.uncatered, icon: XCircle, color: 'text-orange-400', bg: 'bg-orange-500/10' },
   ];
@@ -222,15 +296,18 @@ export const AdminDashboard: React.FC = () => {
             <span className="text-gray-200 font-medium">{jurisdictionLabel}</span>.
           </p>
         </div>
-        <div className="flex space-x-2 bg-[#1C1A24] p-1.5 rounded-full border border-[#2A2638] shadow-sm relative z-10">
+        <div className="flex space-x-2 bg-[#111111] p-1.5 rounded-full border border-[#1f1f1f] shadow-sm relative z-10">
           <button
             onClick={() => fetchData()}
-            className="px-5 py-2 hover:bg-[#2A2638] text-gray-300 rounded-full text-sm font-medium transition-colors flex items-center"
+            className="px-5 py-2 hover:bg-[#1f1f1f] text-gray-300 rounded-full text-sm font-medium transition-colors flex items-center"
           >
             <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
             Refresh
           </button>
-          <button className="px-5 py-2 bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500 text-white rounded-full text-sm font-medium transition-colors flex items-center shadow-[0_0_15px_rgba(217,70,239,0.4)]">
+          <button
+            onClick={() => setShowBroadcast(true)}
+            className="px-5 py-2 bg-white text-black hover:bg-gray-200 rounded-full text-sm font-medium transition-colors flex items-center shadow-[0_0_15px_rgba(255,255,255,0.25)]"
+          >
             <Radio className="w-4 h-4 mr-2" />
             Broadcast
           </button>
@@ -246,13 +323,44 @@ export const AdminDashboard: React.FC = () => {
             </div>
             <div>
               <p className="text-white text-sm font-semibold">Jurisdiction Scope</p>
-              <p className="text-gray-500 text-xs">Your oversight is limited to your assigned local government area</p>
+              <p className="text-gray-500 text-xs">
+                {authorityId && selectedAuthority
+                  ? `Showing only reports filed by ${selectedAuthority.name}`
+                  : 'Your oversight is limited to your assigned local government area'}
+              </p>
             </div>
           </div>
-          <span className="inline-flex items-center gap-2 bg-[#1a1a1a] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 font-medium">
-            <MapPin className="w-4 h-4 text-blue-500" />
-            {adminLga ? `${adminLga} LGA` : 'Entire State'}{adminState ? ` | ${adminState.replace(/-/g, '')}` : ''}
-          </span>
+          <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+            <div className="relative sm:w-72">
+              <select
+                value={authorityId}
+                onChange={(e) => setAuthorityId(e.target.value)}
+                className="w-full appearance-none bg-[#1a1a1a] border border-gray-700 hover:border-gray-600 text-white text-sm rounded-lg pl-4 pr-10 py-2.5 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-colors cursor-pointer"
+              >
+                <option value="">All authorities under me</option>
+                {authorities.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name}
+                    {a.specialization ? ` (${categoryLabel(a.specialization)})` : ''}
+                    {a.jurisdiction?.lga ? ` — ${a.jurisdiction.lga}` : ''}
+                  </option>
+                ))}
+              </select>
+              <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-sky-400 pointer-events-none" />
+              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+            </div>
+            <span className="inline-flex items-center justify-center gap-2 bg-[#1a1a1a] border border-gray-700 text-white text-sm rounded-lg px-4 py-2.5 font-medium">
+              <MapPin className="w-4 h-4 text-blue-500" />
+              {adminLga ? `${adminLga} LGA` : 'Entire State'}{adminState ? ` | ${adminState.replace(/-/g, '')}` : ''}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {broadcastConfirmation && (
+        <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium bg-emerald-500/10 border border-emerald-500/20 py-2.5 px-4 rounded-lg">
+          <Radio className="w-4 h-4" />
+          {broadcastConfirmation}
         </div>
       )}
 
@@ -265,19 +373,19 @@ export const AdminDashboard: React.FC = () => {
       {/* Top Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 relative z-10">
         {statCards.map((stat, i) => (
-          <div key={i} className="bg-[#1C1A24] border border-[#2A2638] rounded-[24px] p-6 hover:border-[#3d3850] transition-colors shadow-sm relative overflow-hidden group">
+          <div key={i} className="bg-[#111111] border border-[#1f1f1f] rounded-[24px] p-6 hover:border-[#2f2f2f] transition-colors shadow-sm relative overflow-hidden group">
             <div className={`absolute top-0 right-0 w-32 h-32 ${stat.bg} opacity-50 blur-[50px] -mr-10 -mt-10 pointer-events-none rounded-full group-hover:opacity-80 transition-opacity`}></div>
             <div className="flex items-center justify-between mb-6 relative z-10">
               <div className={`w-12 h-12 rounded-full ${stat.bg} flex items-center justify-center`}>
                 <stat.icon className={`w-5 h-5 ${stat.color}`} />
               </div>
-              <span className="text-[10px] text-gray-400 border border-[#2A2638] bg-[#13111C]/50 px-3 py-1.5 rounded-full font-medium truncate max-w-[120px]">
+              <span className="text-[10px] text-gray-400 border border-[#1f1f1f] bg-[#000000]/50 px-3 py-1.5 rounded-full font-medium truncate max-w-[120px]">
                 {scopeName?.replace(/-/g, '')}
               </span>
             </div>
             <h3 className="text-gray-400 text-sm font-medium relative z-10">{stat.title}</h3>
             {loading && !data ? (
-              <div className="h-8 w-20 bg-[#2A2638] rounded-full animate-pulse mt-2 relative z-10" />
+              <div className="h-8 w-20 bg-[#1f1f1f] rounded-full animate-pulse mt-2 relative z-10" />
             ) : (
               <p className="text-3xl font-semibold text-white mt-2 tracking-tight relative z-10">{stat.value ?? 0}</p>
             )}
@@ -287,10 +395,10 @@ export const AdminDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Map Area */}
-        <div className="lg:col-span-2 bg-[#1C1A24] border border-[#2A2638] rounded-[24px] overflow-hidden flex flex-col h-[500px] shadow-sm">
-          <div className="p-5 border-b border-[#2A2638] flex justify-between items-center">
+        <div className="lg:col-span-2 bg-[#111111] border border-[#1f1f1f] rounded-[24px] overflow-hidden flex flex-col h-[500px] shadow-sm">
+          <div className="p-5 border-b border-[#1f1f1f] flex justify-between items-center">
             <h2 className="text-white font-semibold flex items-center gap-2">
-              <ShieldAlert className="w-5 h-5 mr-1 text-fuchsia-500" />
+              <ShieldAlert className="w-5 h-5 mr-1 text-white" />
               Live Threat Map <span className="text-gray-500 font-normal text-sm ml-1">| {scopeName?.replace(/-/g, '')}</span>
             </h2>
             {!loading && data && (
@@ -568,14 +676,14 @@ export const AdminDashboard: React.FC = () => {
         {/* Charts Column */}
         <div className="space-y-6">
           {/* Incident Activity Chart */}
-          <div className="bg-[#1C1A24] border border-[#2A2638] rounded-[24px] p-6 shadow-sm">
+          <div className="bg-[#111111] border border-[#1f1f1f] rounded-[24px] p-6 shadow-sm">
             <h2 className="text-white text-sm font-semibold mb-4 flex items-center gap-2">
-              <Activity className="w-5 h-5 mr-1 text-fuchsia-500" />
+              <Activity className="w-5 h-5 mr-1 text-white" />
               7 Day Incident Activity <span className="text-gray-500 font-normal text-xs ml-1">| {scopeName?.replace(/-/g, '')}</span>
             </h2>
             <div className="h-48">
               {loading && !data ? (
-                <div className="h-full bg-[#2A2638]/50 rounded-xl animate-pulse" />
+                <div className="h-full bg-[#1f1f1f]/50 rounded-xl animate-pulse" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={data?.activityData ?? []}>
@@ -587,7 +695,7 @@ export const AdminDashboard: React.FC = () => {
                     </defs>
                     <XAxis dataKey="time" stroke="#6b7280" fontSize={10} tickLine={false} axisLine={false} interval={0} />
                     <Tooltip
-                      contentStyle={{ backgroundColor: '#13111C', border: '1px solid #2A2638', borderRadius: '12px', color: '#fff' }}
+                      contentStyle={{ backgroundColor: '#000000', border: '1px solid #1f1f1f', borderRadius: '12px', color: '#fff' }}
                       itemStyle={{ color: '#d946ef' }}
                     />
                     <Area type="monotone" dataKey="incidents" stroke="#d946ef" strokeWidth={3} fillOpacity={1} fill="url(#colorIncidentsAdmin)" name="Incidents" />
@@ -598,13 +706,13 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           {/* Severity Breakdown */}
-          <div className="bg-[#1C1A24] border border-[#2A2638] rounded-[24px] p-6 shadow-sm">
+          <div className="bg-[#111111] border border-[#1f1f1f] rounded-[24px] p-6 shadow-sm">
             <h2 className="text-white text-sm font-semibold mb-4 flex items-center gap-2">
               Severity Breakdown <span className="text-gray-500 font-normal text-xs ml-1">| {scopeName?.replace(/-/g, '')}</span>
             </h2>
             <div className="h-64 relative">
               {loading && !data ? (
-                <div className="h-full bg-[#2A2638]/50 rounded-xl animate-pulse" />
+                <div className="h-full bg-[#1f1f1f]/50 rounded-xl animate-pulse" />
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -647,7 +755,7 @@ export const AdminDashboard: React.FC = () => {
       <PendingApprovals reviewingRole="authority" />
 
       {/* Network Communication / Uncatered emergencies */}
-      <div className="bg-[#1C1A24] border border-[#2A2638] rounded-[24px] p-6 shadow-sm mb-10">
+      <div className="bg-[#111111] border border-[#1f1f1f] rounded-[24px] p-6 shadow-sm mb-10">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-white text-lg font-semibold tracking-wide">
             Pending Emergencies
@@ -673,7 +781,7 @@ export const AdminDashboard: React.FC = () => {
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[800px]">
               <thead>
-                <tr className="border-b border-[#2A2638] text-gray-400 text-[11px] uppercase tracking-wider font-semibold">
+                <tr className="border-b border-[#1f1f1f] text-gray-400 text-[11px] uppercase tracking-wider font-semibold">
                   <th className="pb-4 px-4">Incident ID</th>
                   <th className="pb-4 px-4">Location</th>
                   <th className="pb-4 px-4">Severity</th>
@@ -692,7 +800,7 @@ export const AdminDashboard: React.FC = () => {
                         const full = mapReels.find((m) => m._id === inc.reelId);
                         if (full) openIncident(full);
                       }}
-                      className="border-b border-[#2A2638]/50 hover:bg-[#2A2638]/30 transition-colors group cursor-pointer"
+                      className="border-b border-[#1f1f1f]/50 hover:bg-[#1f1f1f]/30 transition-colors group cursor-pointer"
                     >
                       <td className="py-5 text-gray-300 font-mono px-4 text-xs">INC-{inc.id}</td>
                       <td className="py-5 text-gray-300 px-4 text-sm font-medium">
@@ -727,6 +835,24 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* All reports in this admin's jurisdiction, with full AI analysis */}
+      <ReportsList
+        reports={data?.reports ?? []}
+        loading={loading}
+        scopeName={scopeName}
+        onOpen={(report) => openIncident(reportToMapReel(report))}
+      />
+
+      <BroadcastModal
+        open={showBroadcast}
+        onClose={() => setShowBroadcast(false)}
+        recipientLabel={recipientLabel}
+        recipientHint={recipientHint}
+        onSubmit={handleBroadcast}
+      />
+
+      <NotificationToasts socket={liveSocket} userId={user?.id} />
     </div>
   );
 };

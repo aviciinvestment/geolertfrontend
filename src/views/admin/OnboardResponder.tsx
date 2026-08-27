@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { UserPlus, User, Mail, Lock, CheckCircle2, MapPin } from 'lucide-react';
+import { UserPlus, User, Mail, Lock, CheckCircle2, MapPin, ShieldAlert } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { SPECIALIZATION_OPTIONS } from '../../constants/incidentCategories';
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 
@@ -9,6 +10,7 @@ interface CreatedAuthority {
   id: string;
   name: string;
   email: string;
+  specialization?: string;
   jurisdiction?: { country?: string; state?: string; lga?: string };
 }
 
@@ -21,14 +23,15 @@ export const OnboardResponder: React.FC = () => {
     name: '',
     email: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    specialization: 'general'
   });
   const [createdUser, setCreatedUser] = useState<CreatedAuthority | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const resetForm = () => {
-    setFormData({ name: '', email: '', password: '', confirmPassword: '' });
+    setFormData({ name: '', email: '', password: '', confirmPassword: '', specialization: 'general' });
     setCreatedUser(null);
     setError('');
   };
@@ -57,6 +60,7 @@ export const OnboardResponder: React.FC = () => {
           name: formData.name,
           email: formData.email,
           password: formData.password,
+          specialization: formData.specialization,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -103,10 +107,16 @@ export const OnboardResponder: React.FC = () => {
               <span className="text-gray-200 font-medium">{createdUser.name}</span> ({createdUser.email}) can now log in with the temporary password.
             </p>
             {createdUser.jurisdiction && (
-              <p className="text-gray-500 text-sm mb-6">
+              <p className="text-gray-500 text-sm mb-1">
                 Jurisdiction: {createdUser.jurisdiction.lga} LGA, {createdUser.jurisdiction.state}
               </p>
             )}
+            <p className="text-gray-500 text-sm mb-6">
+              Specialization:{' '}
+              <span className="text-white">
+                {SPECIALIZATION_OPTIONS.find((o) => o.value === (createdUser.specialization || 'general'))?.label || 'General'}
+              </span>
+            </p>
             <button
               onClick={resetForm}
               className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-blue-500/20"
@@ -145,6 +155,30 @@ export const OnboardResponder: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Response Specialization <span className="text-gray-500 font-normal">(what incidents they respond to)</span>
+                </label>
+                <div className="relative">
+                  <ShieldAlert className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white" />
+                  <select
+                    required
+                    className="w-full appearance-none bg-[#151515] border border-gray-700 text-white rounded-lg pl-10 pr-4 py-2.5 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-colors cursor-pointer"
+                    value={formData.specialization}
+                    onChange={(e) => setFormData({ ...formData, specialization: e.target.value })}
+                  >
+                    {SPECIALIZATION_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-gray-500 text-xs mt-1.5">
+                  Incidents are routed here by AI category. If none match your specialization in your LGA, you still receive every incident in your jurisdiction.
+                </p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
 import { MapContainer, TileLayer, Marker, Circle, Rectangle, Polyline, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { Radio, Eye, MessageCircle, Heart, RefreshCw, Navigation, X, Clock, Route, Play, GripVertical, AlertTriangle, ChevronRight, PanelLeftOpen, Shield, MapPin, Menu, Info, Search, ChevronDown, Check, Layers, Activity, Lock, Unlock, TrendingUp, BarChart3, Target, Zap, CheckCircle2, XCircle } from 'lucide-react';
@@ -6,6 +7,8 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 import { useDraggable } from '../hooks/useDraggable';
 import { ReelPlayer } from './ReelPlayer';
 import { StreamService, Stream } from '../services/StreamService';
+import { NotificationToasts } from '../components/NotificationToasts';
+import { useAuth } from '../context/AuthContext';
 import 'leaflet/dist/leaflet.css';
 
 const CLOSE_RANGE = 3.5;
@@ -208,6 +211,8 @@ function renderFormattedText(text: string): React.ReactNode[] {
 }
 
 export function MissionPlannerView() {
+  const { user } = useAuth();
+  const [liveSocket, setLiveSocket] = useState<Socket | null>(null);
   const [position, setPosition] = useState({ lat: 0, lng: 0 });
   const [postsWithLocation, setPostsWithLocation] = useState<Stream[]>([]);
   const [loading, setLoading] = useState(true);
@@ -293,7 +298,12 @@ export function MissionPlannerView() {
   const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
-      const feeds = await StreamService.getFeed();
+      // Authorities only see incidents routed to them (AI category +
+      // jurisdiction + specialization aware).
+      const feeds =
+        user?.role === 'authority'
+          ? await StreamService.getAssignedReels()
+          : await StreamService.getFeed();
       const withLocation = feeds.filter(s => s.location && s.location.coordinates);
       setPostsWithLocation(withLocation);
     } catch (err) {
@@ -301,9 +311,23 @@ export function MissionPlannerView() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user?.role]);
 
   useEffect(() => { fetchPosts(); }, [fetchPosts]);
+
+  // Live socket: refresh reported posts + receive admin broadcasts in real time
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL);
+    setLiveSocket(socket);
+    socket.on('new_reel', () => fetchPosts());
+    socket.on('reel_analysis_updated', () => fetchPosts());
+    return () => {
+      socket.off('new_reel');
+      socket.off('reel_analysis_updated');
+      setLiveSocket(null);
+      socket.disconnect();
+    };
+  }, [fetchPosts]);
 
   useEffect(() => {
     if (showAnalytics && !analyticsData) {
@@ -1083,6 +1107,8 @@ export function MissionPlannerView() {
           </div>
         </div>
       )}
+
+      <NotificationToasts socket={liveSocket} userId={user?.id} />
     </div>
   );
 }

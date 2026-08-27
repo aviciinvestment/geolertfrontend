@@ -9,11 +9,11 @@ import {
   Settings, 
   HelpCircle,
   Search,
-  Bell,
   LogOut,
   UserPlus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { NotificationBell } from './NotificationBell';
 
 interface SidebarItem {
   icon: React.ElementType;
@@ -52,14 +52,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
   };
 
   return (
-    <div className="flex h-screen bg-[#13111C] text-gray-100 overflow-hidden">
+    <div className="flex h-screen bg-black text-gray-100 overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-64 bg-[#1A1825] border-r border-[#2A2638] flex flex-col z-20">
+      <aside className="w-64 bg-[#0a0a0a] border-r border-[#1f1f1f] flex flex-col z-20">
         {/* Logo Area */}
-        <div className="h-16 flex items-center px-6 border-b border-[#2A2638]">
-          <ShieldAlert className="w-6 h-6 text-fuchsia-500 mr-3" />
+        <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f]">
+          <ShieldAlert className="w-6 h-6 text-white mr-3" />
           <span className="text-lg font-bold tracking-wide text-white">
-            GeoAlert <span className="text-fuchsia-500">{role === 'superadmin' ? 'HQ' : 'Admin'}</span>
+            GeoAlert <span className="text-gray-300">{role === 'superadmin' ? 'HQ' : 'Admin'}</span>
           </span>
         </div>
 
@@ -77,14 +77,14 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
                 className={
                   `flex items-center px-4 py-3 rounded-full transition-all duration-300 group ${
                     isActive
-                      ? 'bg-gradient-to-r from-fuchsia-500/20 to-purple-500/20 text-fuchsia-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
-                      : 'text-gray-400 hover:bg-[#2A2638] hover:text-gray-200'
+                      ? 'bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]'
+                      : 'text-gray-400 hover:bg-[#1f1f1f] hover:text-gray-200'
                   }`
                 }
               >
                 <item.icon
                   className={`w-5 h-5 mr-3 ${
-                    isActive ? 'text-fuchsia-400' : 'text-gray-500 group-hover:text-gray-300'
+                    isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-300'
                   }`}
                 />
                 <span className="font-medium text-sm">{item.label}</span>
@@ -94,8 +94,8 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
         </nav>
 
         {/* Bottom Actions */}
-        <div className="p-4 border-t border-[#2A2638]">
-          <button className="flex items-center px-4 py-2.5 text-gray-400 hover:text-gray-200 hover:bg-[#2A2638] rounded-full w-full transition-colors mb-1">
+        <div className="p-4 border-t border-[#1f1f1f]">
+          <button className="flex items-center px-4 py-2.5 text-gray-400 hover:text-gray-200 hover:bg-[#1f1f1f] rounded-full w-full transition-colors mb-1">
             <HelpCircle className="w-5 h-5 mr-3" />
             <span className="text-sm font-medium">Support</span>
           </button>
@@ -110,31 +110,28 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-[#13111C]">
-        {/* Glow effect behind main content */}
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-fuchsia-600/10 blur-[120px] pointer-events-none z-0"></div>
-        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-purple-600/10 blur-[120px] pointer-events-none z-0"></div>
+      <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-black">
+        {/* Subtle neutral glow behind main content */}
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] rounded-full bg-white/5 blur-[120px] pointer-events-none z-0"></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[50%] h-[50%] rounded-full bg-white/5 blur-[120px] pointer-events-none z-0"></div>
 
         {/* Topbar */}
-        <header className="h-16 bg-[#13111C]/70 backdrop-blur-md border-b border-[#2A2638] flex items-center justify-between px-8 sticky top-0 z-10">
+        <header className="h-16 bg-black/70 backdrop-blur-md border-b border-[#1f1f1f] flex items-center justify-between px-8 sticky top-0 z-10">
           <div className="flex-1 max-w-xl">
             <div className="relative group">
-              <Search className="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-fuchsia-500 transition-colors" />
+              <Search className="w-4 h-4 text-gray-500 absolute left-4 top-1/2 -translate-y-1/2 group-focus-within:text-white transition-colors" />
               <input
                 type="text"
                 placeholder="Search..."
-                className="w-full bg-[#1C1A24] border border-[#2A2638] text-sm rounded-full pl-11 pr-4 py-2 focus:outline-none focus:border-fuchsia-500/50 focus:ring-1 focus:ring-fuchsia-500/50 transition-all placeholder:text-gray-500"
+                className="w-full bg-[#111111] border border-[#1f1f1f] text-sm rounded-full pl-11 pr-4 py-2 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/50 transition-all placeholder:text-gray-500"
               />
             </div>
           </div>
           
           <div className="flex items-center space-x-6">
-            <button className="relative text-gray-400 hover:text-gray-200 transition-colors bg-[#1C1A24] p-2 rounded-full border border-[#2A2638]">
-              <Bell className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-fuchsia-500 rounded-full border-2 border-[#13111C]"></span>
-            </button>
-            <div className="flex items-center space-x-3 pl-6 border-l border-[#2A2638] cursor-pointer group">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-fuchsia-600 to-purple-600 flex items-center justify-center text-white font-medium shadow-[0_0_15px_rgba(217,70,239,0.3)] group-hover:scale-105 transition-transform">
+            <NotificationBell />
+            <div className="flex items-center space-x-3 pl-6 border-l border-[#1f1f1f] cursor-pointer group">
+              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-zinc-600 to-zinc-800 flex items-center justify-center text-white font-medium group-hover:scale-105 transition-transform">
                 {user?.name?.charAt(0).toUpperCase() || 'A'}
               </div>
               <div className="hidden md:block">

@@ -11,6 +11,7 @@ interface User {
   isAnonymous?: boolean;
   role?: UserRole;
   authorizationStatus?: 'pending' | 'approved' | 'rejected';
+  specialization?: string;
   jurisdiction?: {
     country?: string;
     state?: string;

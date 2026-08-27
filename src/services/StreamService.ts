@@ -18,6 +18,7 @@ export interface Stream {
   location?: { type: string; coordinates: [number, number] };
   aiAnalysis?: { summary: string; transcript: string; description: string; severityReason: string };
   severity?: number;
+  category?: string;
   engagementPriority?: number;
   status?: 'pending' | 'attended' | 'false_report';
 }
@@ -39,6 +40,43 @@ export interface JurisdictionMapReel {
   views?: number;
   likes?: number;
   comments?: number;
+}
+
+export interface JurisdictionReport {
+  _id: string;
+  status: 'pending' | 'attended' | 'false_report';
+  severity: number;
+  description?: string;
+  aiAnalysis?: {
+    summary: string;
+    transcript: string;
+    description: string;
+    severityReason: string;
+  } | null;
+  url: string;
+  avatar?: string;
+  username: string;
+  isAnonymous: boolean;
+  area?: string;
+  lga?: string;
+  state?: string;
+  latitude: number;
+  longitude: number;
+  userId?: string;
+  createdAt: string;
+  views?: number;
+  likes?: number;
+  comments?: number;
+}
+
+export interface Subordinate {
+  id: string;
+  name: string;
+  avatar?: string;
+  email?: string;
+  role: string;
+  specialization?: string;
+  jurisdiction?: { country?: string; state?: string; lga?: string } | null;
 }
 
 export interface JurisdictionDashboard {
@@ -64,6 +102,7 @@ export interface JurisdictionDashboard {
     reporter: string;
     createdAt: string;
   }[];
+  reports: JurisdictionReport[];
   center: [number, number] | null;
 }
 
@@ -85,6 +124,20 @@ export interface UserProfile {
   isAnonymous: boolean;
   trustScore?: number;
   createdAt: string;
+}
+
+export interface AppNotification {
+  id: string;
+  senderName?: string;
+  senderId?: string;
+  message: string;
+  type?: string;
+  category?: string;
+  severity?: number;
+  reelId?: string;
+  locationLabel?: string;
+  read?: boolean;
+  createdAt?: string;
 }
 
 const API_URL = `${import.meta.env.VITE_API_URL}/api/reels`;
@@ -113,6 +166,24 @@ export const StreamService = {
     }
   },
 
+  // Only incidents routed to this Authority Responder (jurisdiction- and
+  // specialization-aware), shaped like the feed.
+  getAssignedReels: async (): Promise<Stream[]> => {
+    try {
+      const response = await fetch(`${API_URL}/assigned`, {
+        headers: { ...getAuthHeader() }
+      });
+      const json = await response.json();
+      if (json.success) {
+        return json.data;
+      }
+      throw new Error(json.message || 'Failed to fetch assigned incidents');
+    } catch (error) {
+      console.error('Error fetching assigned incidents:', error);
+      throw error;
+    }
+  },
+
   getAnalytics: async (): Promise<any> => {
     try {
       const response = await fetch(`${API_URL}/analytics`, {
@@ -126,9 +197,16 @@ export const StreamService = {
     }
   },
 
-  getJurisdictionDashboard: async (lga?: string): Promise<JurisdictionDashboard | null> => {
+  getJurisdictionDashboard: async (
+    lga?: string,
+    opts?: { authorityId?: string; adminId?: string }
+  ): Promise<JurisdictionDashboard | null> => {
     try {
-      const qs = lga && lga !== '__all__' ? `?lga=${encodeURIComponent(lga)}` : '';
+      const params = new URLSearchParams();
+      if (lga && lga !== '__all__') params.set('lga', lga);
+      if (opts?.authorityId) params.set('authorityId', opts.authorityId);
+      if (opts?.adminId) params.set('adminId', opts.adminId);
+      const qs = params.toString() ? `?${params.toString()}` : '';
       const response = await fetch(`${API_URL}/jurisdiction${qs}`, {
         headers: { ...getAuthHeader() },
       });
@@ -137,6 +215,75 @@ export const StreamService = {
     } catch (error) {
       console.error('Error fetching jurisdiction dashboard:', error);
       return null;
+    }
+  },
+
+  // Users under this account: Authority Responders (admin) or Local Admins (superadmin)
+  getSubordinates: async (): Promise<Subordinate[]> => {
+    try {
+      const response = await fetch(`${USERS_URL}/subordinates`, {
+        headers: { ...getAuthHeader() },
+      });
+      const json = await response.json();
+      return json.success ? json.data : [];
+    } catch (error) {
+      console.error('Error fetching subordinates:', error);
+      return [];
+    }
+  },
+
+  // Send a broadcast notification to one subordinate (targetId) or all of them.
+  sendBroadcast: async (
+    message: string,
+    targetId?: string
+  ): Promise<{ success: boolean; sent?: number; message?: string }> => {
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/broadcast`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader(),
+        },
+        body: JSON.stringify({ message, targetId }),
+      });
+      const json = await response.json();
+      return json;
+    } catch (error) {
+      console.error('Error sending broadcast:', error);
+      return { success: false, message: 'Failed to send broadcast' };
+    }
+  },
+
+  // Persisted notifications (broadcasts + routed incident alerts) for this user.
+  getNotifications: async (limit: number = 50): Promise<AppNotification[]> => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/notifications?limit=${limit}`,
+        { headers: { ...getAuthHeader() } }
+      );
+      const json = await response.json();
+      return json.success ? json.data : [];
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      return [];
+    }
+  },
+
+  // Mark every outstanding notification as read.
+  markNotificationsRead: async (): Promise<boolean> => {
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/notifications/read`,
+        {
+          method: 'PUT',
+          headers: { ...getAuthHeader() },
+        }
+      );
+      const json = await response.json();
+      return json.success === true;
+    } catch (error) {
+      console.error('Error marking notifications read:', error);
+      return false;
     }
   },
 
