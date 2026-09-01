@@ -16,7 +16,7 @@ export const LocationReporter: React.FC = () => {
     if (!navigator.geolocation) return;
 
     const sendLocation = async (lat: number, lng: number) => {
-      const token = localStorage.getItem('geolert_token');
+      const token = localStorage.getItem('achiv_token');
       if (!token) return;
       try {
         await fetch(`${import.meta.env.VITE_API_URL}/api/auth/location`, {

@@ -50,7 +50,7 @@ const LandingView: React.FC = () => {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-pink-500 to-violet-500 flex items-center justify-center shadow-lg shadow-pink-500/20">
               <Zap className="w-5 h-5 text-white" />
             </div>
-            <span className="text-2xl font-bold tracking-tight">Geolert</span>
+            <span className="text-2xl font-bold tracking-tight">ACHIV</span>
           </motion.div>
 
           <motion.div 
@@ -123,7 +123,7 @@ const LandingView: React.FC = () => {
                 onClick={() => navigate(user ? '/app' : '/login')}
                 className="w-full sm:w-auto px-8 py-4 bg-foreground text-background rounded-full font-bold text-lg hover:scale-105 active:scale-95 transition-all shadow-2xl flex items-center justify-center gap-2"
               >
-                {user ? 'Open Geolert' : 'Join the Network'} <ArrowRight className="w-5 h-5" />
+                {user ? 'Open ACHIV' : 'Join the Network'} <ArrowRight className="w-5 h-5" />
               </button>
               <button className="w-full sm:w-auto px-8 py-4 bg-background border-2 border-border text-foreground rounded-full font-bold text-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
                 <Play className="w-5 h-5" /> Watch Demo
@@ -183,7 +183,7 @@ const LandingView: React.FC = () => {
       <section className="py-32 px-6 bg-black/[0.02] dark:bg-white/[0.02]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-20">
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">How Geolert Works</h2>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">How ACHIV Works</h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">A seamless flow from the moment an incident is captured to the second authorities arrive.</p>
           </div>
 
@@ -253,7 +253,7 @@ const LandingView: React.FC = () => {
             onClick={() => navigate(user ? '/app' : '/login')}
             className="px-10 py-5 bg-background text-foreground rounded-full font-bold text-xl hover:scale-105 active:scale-95 transition-all shadow-2xl"
           >
-            {user ? 'Open Geolert' : 'Create Free Account'}
+            {user ? 'Open ACHIV' : 'Create Free Account'}
           </button>
         </div>
       </section>
@@ -261,7 +261,7 @@ const LandingView: React.FC = () => {
       {/* Footer */}
       <footer className="py-12 px-6 border-t border-border text-center">
         <p className="text-muted-foreground font-medium flex items-center justify-center gap-2">
-          <Zap className="w-4 h-4" /> Geolert &copy; {new Date().getFullYear()}. All rights reserved.
+          <Zap className="w-4 h-4" /> ACHIV &copy; {new Date().getFullYear()}. All rights reserved.
         </p>
       </footer>
     </div>

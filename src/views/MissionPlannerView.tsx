@@ -225,7 +225,7 @@ export function MissionPlannerView() {
   const [filterSectionOpen, setFilterSectionOpen] = useState(true);
   const [routeLoading, setRouteLoading] = useState(false);
   const [scanRange, setScanRange] = useState(() => {
-    try { return Number(localStorage.getItem('geolert_scan_range')) || SCAN_RANGE; } catch { return SCAN_RANGE; }
+    try { return Number(localStorage.getItem('achiv_scan_range')) || SCAN_RANGE; } catch { return SCAN_RANGE; }
   });
   const [selectedReelAddress, setSelectedReelAddress] = useState<string>('');
   const [messageExpanded, setMessageExpanded] = useState(false);
@@ -236,7 +236,7 @@ export function MissionPlannerView() {
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    try { localStorage.setItem('geolert_scan_range', String(scanRange)); } catch {}
+    try { localStorage.setItem('achiv_scan_range', String(scanRange)); } catch {}
   }, [scanRange]);
 
   const defaultCenter: [number, number] = position.lat !== 0 ? [position.lat, position.lng] : [41.9028, 12.4964];

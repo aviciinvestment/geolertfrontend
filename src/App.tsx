@@ -20,6 +20,7 @@ import { AdminDashboard } from './views/admin/AdminDashboard'
 import { OnboardSuperAdmin } from './views/admin/OnboardSuperAdmin'
 import { OnboardAdmin } from './views/admin/OnboardAdmin'
 import { OnboardResponder } from './views/admin/OnboardResponder'
+import { FoundersView } from './views/admin/FoundersView'
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -195,6 +196,8 @@ function ProtectedAuthority() {
 
 function homeForRole(role?: string): string {
   switch (role) {
+    case 'founder':
+      return '/founder'
     case 'superadmin':
       return '/superadmin'
     case 'admin':
@@ -243,10 +246,34 @@ function ProtectedAdmin({ role }: { role: 'superadmin' | 'admin' }) {
   )
 }
 
+function ProtectedFounder() {
+  const { user, isLoading } = useAuth()
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
+  }
+
+  // Only an authorized account holding the founder role may enter.
+  const isAuthorized =
+    user && user.role === 'founder' && user.authorizationStatus === 'approved'
+
+  if (!isAuthorized) {
+    return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />
+  }
+
+  return (
+    <AdminLayout role="founder">
+      <Routes>
+        <Route path="/" element={<FoundersView />} />
+      </Routes>
+    </AdminLayout>
+  )
+}
+
 function App() {
   return (
     <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <ThemeProvider defaultTheme="dark" storageKey="geolert-theme">
+      <ThemeProvider defaultTheme="dark" storageKey="achiv-theme">
           <BrowserRouter>
             <AuthProvider>
               <LocationReporter />
@@ -258,6 +285,7 @@ function App() {
                   <Route path="/authority" element={<ProtectedAuthority />} />
                   <Route path="/superadmin/*" element={<ProtectedAdmin role="superadmin" />} />
                   <Route path="/admin/*" element={<ProtectedAdmin role="admin" />} />
+                  <Route path="/founder/*" element={<ProtectedFounder />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AudioProvider>

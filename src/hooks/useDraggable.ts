@@ -4,7 +4,7 @@ export function useDraggable(defaultX: number, defaultY: number, storageKey?: st
   const [pos, setPos] = useState(() => {
     if (storageKey) {
       try {
-        const saved = localStorage.getItem(`geolert_drag_${storageKey}`);
+        const saved = localStorage.getItem(`achiv_drag_${storageKey}`);
         if (saved) {
           const parsed = JSON.parse(saved);
           return { x: parsed.x, y: parsed.y };
@@ -16,7 +16,7 @@ export function useDraggable(defaultX: number, defaultY: number, storageKey?: st
   const [locked, setLocked] = useState(() => {
     if (storageKey) {
       try {
-        return localStorage.getItem(`geolert_lock_${storageKey}`) === 'true';
+        return localStorage.getItem(`achiv_lock_${storageKey}`) === 'true';
       } catch {}
     }
     return false;
@@ -27,7 +27,7 @@ export function useDraggable(defaultX: number, defaultY: number, storageKey?: st
   useEffect(() => {
     if (storageKey) {
       try {
-        localStorage.setItem(`geolert_drag_${storageKey}`, JSON.stringify(pos));
+        localStorage.setItem(`achiv_drag_${storageKey}`, JSON.stringify(pos));
       } catch {}
     }
   }, [pos.x, pos.y, storageKey]);
@@ -35,7 +35,7 @@ export function useDraggable(defaultX: number, defaultY: number, storageKey?: st
   useEffect(() => {
     if (storageKey) {
       try {
-        localStorage.setItem(`geolert_lock_${storageKey}`, String(locked));
+        localStorage.setItem(`achiv_lock_${storageKey}`, String(locked));
       } catch {}
     }
   }, [locked, storageKey]);

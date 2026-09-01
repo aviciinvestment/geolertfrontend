@@ -36,8 +36,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('geolert_token');
-    const storedUser = localStorage.getItem('geolert_user');
+    const storedToken = localStorage.getItem('achiv_token');
+    const storedUser = localStorage.getItem('achiv_user');
 
     if (storedToken && storedUser) {
       setToken(storedToken);
@@ -49,15 +49,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (userData: User, authToken: string) => {
     setUser(userData);
     setToken(authToken);
-    localStorage.setItem('geolert_token', authToken);
-    localStorage.setItem('geolert_user', JSON.stringify(userData));
+    localStorage.setItem('achiv_token', authToken);
+    localStorage.setItem('achiv_user', JSON.stringify(userData));
   };
 
   const updateUser = (partial: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev;
       const updated = { ...prev, ...partial };
-      localStorage.setItem('geolert_user', JSON.stringify(updated));
+      localStorage.setItem('achiv_user', JSON.stringify(updated));
       return updated;
     });
   };
@@ -65,8 +65,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem('geolert_token');
-    localStorage.removeItem('geolert_user');
+    localStorage.removeItem('achiv_token');
+    localStorage.removeItem('achiv_user');
   };
 
   return (

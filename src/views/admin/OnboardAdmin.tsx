@@ -63,7 +63,7 @@ export const OnboardAdmin: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const token = localStorage.getItem('geolert_token');
+      const token = localStorage.getItem('achiv_token');
       const response = await axios.post(
         `${API_URL}/onboard/admin`,
         {

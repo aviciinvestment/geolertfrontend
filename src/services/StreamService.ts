@@ -79,6 +79,14 @@ export interface Subordinate {
   jurisdiction?: { country?: string; state?: string; lga?: string } | null;
 }
 
+export interface GroupedUsers {
+  users: any[];
+  authorities: any[];
+  admins: any[];
+  superadmins: any[];
+  founders: any[];
+}
+
 export interface JurisdictionDashboard {
   scope: { country: string | null; state: string | null; lga: string | null };
   areas: string[];
@@ -143,9 +151,10 @@ export interface AppNotification {
 const API_URL = `${import.meta.env.VITE_API_URL}/api/reels`;
 const AUTH_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 const USERS_URL = `${import.meta.env.VITE_API_URL}/api/users`;
+const FOUNDER_URL = `${import.meta.env.VITE_API_URL}/api/founder`;
 
 const getAuthHeader = (): Record<string, string> => {
-  const token = localStorage.getItem('geolert_token');
+  const token = localStorage.getItem('achiv_token');
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
@@ -214,6 +223,32 @@ export const StreamService = {
       return json.success ? json.data : null;
     } catch (error) {
       console.error('Error fetching jurisdiction dashboard:', error);
+      return null;
+    }
+  },
+
+  getFounderDashboard: async (): Promise<JurisdictionDashboard | null> => {
+    try {
+      const response = await fetch(`${FOUNDER_URL}/dashboard`, {
+        headers: { ...getAuthHeader() },
+      });
+      const json = await response.json();
+      return json.success ? json.data : null;
+    } catch (error) {
+      console.error('Error fetching founder dashboard:', error);
+      return null;
+    }
+  },
+
+  getAllUsersGrouped: async (): Promise<GroupedUsers | null> => {
+    try {
+      const response = await fetch(`${FOUNDER_URL}/users`, {
+        headers: { ...getAuthHeader() },
+      });
+      const json = await response.json();
+      return json.success ? json.data : null;
+    } catch (error) {
+      console.error('Error fetching founder users:', error);
       return null;
     }
   },
@@ -314,7 +349,7 @@ export const StreamService = {
     formData.append('description', description);
     formData.append('isAnonymous', String(isAnonymous));
     
-    const userStr = localStorage.getItem('geolert_user');
+    const userStr = localStorage.getItem('achiv_user');
     const user = userStr ? JSON.parse(userStr) : null;
     formData.append('username', user?.name || 'anonymous');
 

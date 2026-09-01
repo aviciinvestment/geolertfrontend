@@ -79,7 +79,7 @@ export const AuthView: React.FC = () => {
 
           <div className="text-center mb-10">
             <h1 className="text-5xl font-bold tracking-tight text-white mb-2">
-              Geolert
+              ACHIV
             </h1>
             <p className="text-white/50 text-[15px] font-medium px-4">
               {isLogin ? 'Welcome back.' : 'Create your account.'}

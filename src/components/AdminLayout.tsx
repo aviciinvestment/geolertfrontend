@@ -23,7 +23,7 @@ interface SidebarItem {
 
 interface AdminLayoutProps {
   children: ReactNode;
-  role: 'superadmin' | 'admin';
+  role: 'superadmin' | 'admin' | 'founder';
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
@@ -44,7 +44,11 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
     { icon: Settings, label: 'Settings', path: '/admin/settings' },
   ];
 
-  const navItems = role === 'superadmin' ? superAdminNav : adminNav;
+  const founderNav: SidebarItem[] = [
+    { icon: LayoutDashboard, label: 'Founders Dashboard', path: '/founder' },
+  ];
+
+  const navItems = role === 'founder' ? founderNav : role === 'superadmin' ? superAdminNav : adminNav;
 
   const handleLogout = () => {
     logout();
@@ -59,7 +63,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, role }) => {
         <div className="h-16 flex items-center px-6 border-b border-[#1f1f1f]">
           <ShieldAlert className="w-6 h-6 text-white mr-3" />
           <span className="text-lg font-bold tracking-wide text-white">
-            GeoAlert <span className="text-gray-300">{role === 'superadmin' ? 'HQ' : 'Admin'}</span>
+            ACHIV <span className="text-gray-300">{role === 'founder' ? 'Founder' : role === 'superadmin' ? 'HQ' : 'Admin'}</span>
           </span>
         </div>
 

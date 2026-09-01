@@ -24,7 +24,7 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({ reviewingRol
 
   const fetchApprovals = useCallback(async () => {
     try {
-      const token = localStorage.getItem('geolert_token');
+      const token = localStorage.getItem('achiv_token');
       const res = await axios.get(`${API_URL}/approvals`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -43,7 +43,7 @@ export const PendingApprovals: React.FC<PendingApprovalsProps> = ({ reviewingRol
   const review = async (id: string, action: 'approve' | 'reject') => {
     setBusyId(id);
     try {
-      const token = localStorage.getItem('geolert_token');
+      const token = localStorage.getItem('achiv_token');
       await axios.put(
         `${API_URL}/approvals/${id}`,
         { action },
