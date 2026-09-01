@@ -8,6 +8,8 @@ const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 
 const homeForRole = (role?: string): string => {
   switch (role) {
+    case 'founder':
+      return '/founder';
     case 'superadmin':
       return '/superadmin';
     case 'admin':

@@ -1,10 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useAuth } from '../../context/AuthContext';
+import { io } from 'socket.io-client';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { MapContainer, TileLayer, Marker, Popup, Circle, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Activity, ShieldAlert, Users, Radio, CheckCircle2, AlertTriangle, XCircle, MapPin, RefreshCw, Eye, Heart, MessageCircle, Navigation, X, Clock, UserIcon, Shield, Star, Crown } from 'lucide-react';
+import { Activity, ShieldAlert, Users, CheckCircle2, AlertTriangle, XCircle, MapPin, RefreshCw, Navigation, X, Clock, UserIcon, Shield, Star, Crown } from 'lucide-react';
 import L from 'leaflet';
 import { StreamService, JurisdictionDashboard, JurisdictionMapReel, Stream, GroupedUsers } from '../../services/StreamService';
 import { ReelPlayer } from '../ReelPlayer';
@@ -70,7 +69,6 @@ function Recenter({ center }: { center: [number, number] | null }) {
 }
 
 export const FoundersView: React.FC = () => {
-  const { user } = useAuth();
   const [data, setData] = useState<JurisdictionDashboard | null>(null);
   const [usersData, setUsersData] = useState<GroupedUsers | null>(null);
   const [activeTab, setActiveTab] = useState<'users' | 'authorities' | 'admins' | 'superadmins' | 'founders'>('users');
@@ -79,7 +77,6 @@ export const FoundersView: React.FC = () => {
   const [selectedIncident, setSelectedIncident] = useState<JurisdictionMapReel | null>(null);
   const [incidentAddress, setIncidentAddress] = useState('');
   const [messageExpanded, setMessageExpanded] = useState(false);
-  const [liveSocket, setLiveSocket] = useState<Socket | null>(null);
   const [resolvingId, setResolvingId] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -111,14 +108,12 @@ export const FoundersView: React.FC = () => {
   // Stay live: refetch whenever a new emergency report hits the network
   useEffect(() => {
     const socket = io(import.meta.env.VITE_API_URL);
-    setLiveSocket(socket);
     const onNewReel = () => {
       fetchData();
     };
     socket.on('new_reel', onNewReel);
     return () => {
       socket.off('new_reel', onNewReel);
-      setLiveSocket(null);
       socket.disconnect();
     };
   }, [fetchData]);
