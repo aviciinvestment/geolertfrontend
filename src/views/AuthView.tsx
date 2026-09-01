@@ -159,8 +159,8 @@ export const AuthView: React.FC = () => {
                 theme="filled_black"
                 shape="pill"
                 text={isLogin ? 'signin_with' : 'signup_with'}
-                width="100%"
                 size="large"
+                width={500}
               />
             </div>
           </div>
