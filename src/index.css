@@ -63,6 +63,19 @@
     display: none;
 }
 
+/* Continuous diagonal drift for hero image tiles.
+   Every tile is placed on a periodic grid (step 370px x -260px) whose
+   image pattern repeats every step, so each image moving by exactly one
+   step and looping is perfectly seamless (no gaps, no pops). */
+@keyframes drift-img {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(370px, -260px); }
+}
+.float-img {
+  animation: drift-img 6s linear infinite;
+  will-change: transform;
+}
+
 /* Hide scrollbar for IE, Edge and Firefox */
 .no-scrollbar {
     -ms-overflow-style: none;  /* IE and Edge */

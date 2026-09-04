@@ -156,7 +156,7 @@ function ProtectedApp() {
             onClick={() => setCurrentView('golive')}
             className="flex items-center justify-center transition-transform hover:scale-105 active:scale-95 -mt-6"
           >
-            <div className="w-14 h-14 bg-gradient-to-tr from-pink-500 to-violet-500 rounded-full flex items-center justify-center shadow-lg shadow-pink-500/30 border-4 border-black">
+            <div className="w-14 h-14 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/30 border-4 border-black">
               <PlusCircle className="w-6 h-6 text-white" />
             </div>
           </button>

@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 400" width="200" height="400">
+  <defs>
+    <linearGradient id="phoneBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3a3f4a"/>
+      <stop offset="100%" stop-color="#1c1f26"/>
+    </linearGradient>
+    <linearGradient id="screenGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0e7490"/>
+      <stop offset="100%" stop-color="#155e75"/>
+    </linearGradient>
+    <radialGradient id="sceneBg" cx="50%" cy="40%" r="80%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Phone body -->
+  <rect x="30" y="10" width="140" height="380" rx="28" fill="url(#phoneBody)" filter="url(#shadow)"/>
+  <rect x="38" y="18" width="124" height="364" rx="22" fill="#0b0e14"/>
+
+  <!-- Side buttons -->
+  <rect x="25" y="80" width="5" height="50" rx="2" fill="#3a3f4a"/>
+  <rect x="25" y="150" width="5" height="40" rx="2" fill="#3a3f4a"/>
+  <rect x="170" y="110" width="5" height="60" rx="2" fill="#3a3f4a"/>
+
+  <!-- Screen -->
+  <rect x="42" y="24" width="116" height="352" rx="18" fill="url(#screenGrad)"/>
+
+  <!-- Scene: sky -->
+  <rect x="42" y="24" width="116" height="260" rx="18" fill="url(#sceneBg)"/>
+
+  <!-- Mountains -->
+  <path d="M42 180 L75 120 L95 160 L115 110 L158 190 Z" fill="#0f3a5f"/>
+  <path d="M42 230 L80 165 L105 205 L140 150 L158 210 Z" fill="#0c2c49" opacity="0.9"/>
+
+  <!-- Sun -->
+  <circle cx="130" cy="70" r="18" fill="#fbbf24" opacity="0.9"/>
+  <circle cx="130" cy="70" r="24" fill="#fbbf24" opacity="0.25"/>
+
+  <!-- Clouds -->
+  <ellipse cx="75" cy="55" rx="22" ry="8" fill="#fff" opacity="0.7"/>
+  <ellipse cx="92" cy="50" rx="14" ry="7" fill="#fff" opacity="0.5"/>
+
+  <!-- Ground -->
+  <rect x="42" y="200" width="116" height="84" fill="#14532d"/>
+
+  <!-- Viewfinder frame -->
+  <rect x="50" y="30" width="100" height="248" rx="4" fill="none" stroke="#ffffff" stroke-opacity="0.85" stroke-width="2" stroke-dasharray="6 4"/>
+
+  <!-- Corner brackets -->
+  <path d="M50 44 L50 40 Q50 30 60 30 L60 34 L54 34 Q50 34 50 40 Z" fill="#22d3ee"/>
+  <path d="M150 44 L150 40 Q150 30 140 30 L140 34 L146 34 Q150 34 150 40 Z" fill="#22d3ee"/>
+  <path d="M50 264 L50 268 Q50 278 60 278 L60 274 L54 274 Q50 274 50 268 Z" fill="#22d3ee"/>
+  <path d="M150 264 L150 268 Q150 278 140 278 L140 274 L146 274 Q150 274 150 268 Z" fill="#22d3ee"/>
+
+  <!-- Center crosshair -->
+  <circle cx="100" cy="120" r="26" fill="none" stroke="#22d3ee" stroke-opacity="0.9" stroke-width="1.5"/>
+  <circle cx="100" cy="120" r="2" fill="#22d3ee"/>
+  <line x1="100" y1="84" x2="100" y2="94" stroke="#22d3ee" stroke-opacity="0.9" stroke-width="1.5"/>
+  <line x1="100" y1="146" x2="100" y2="156" stroke="#22d3ee" stroke-opacity="0.9" stroke-width="1.5"/>
+  <line x1="64" y1="120" x2="74" y2="120" stroke="#22d3ee" stroke-opacity="0.9" stroke-width="1.5"/>
+  <line x1="126" y1="120" x2="136" y2="120" stroke="#22d3ee" stroke-opacity="0.9" stroke-width="1.5"/>
+
+  <!-- Recording indicator -->
+  <rect x="56" y="38" width="10" height="10" rx="2" fill="#ef4444"/>
+  <circle cx="144" cy="43" r="3" fill="#fbbf24"/>
+
+  <!-- Bottom app bar -->
+  <rect x="42" y="270" width="116" height="106" fill="#0b0e14" opacity="0.95"/>
+  <circle cx="70" cy="300" r="14" fill="#ffffff" fill-opacity="0.12"/>
+  <path d="M70 308 L70 292" stroke="#fff" stroke-opacity="0.6" stroke-width="2"/>
+  <circle cx="100" cy="300" r="16" fill="#22d3ee"/>
+  <circle cx="100" cy="300" r="5" fill="#0b0e14"/>
+  <circle cx="130" cy="300" r="14" fill="#ffffff" fill-opacity="0.12"/>
+  <path d="M130 294 L130 306" stroke="#fff" stroke-opacity="0.6" stroke-width="2"/>
+
+  <!-- Camera lens (top back) -->
+  <circle cx="100" cy="26" r="10" fill="#0b0e14" opacity="0"/>
+</svg>
