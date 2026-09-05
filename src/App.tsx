@@ -12,7 +12,7 @@ import { ThemeProvider } from './context/ThemeContext'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { LocationReporter } from './components/LocationReporter'
 
-import { PlusCircle, Home, Settings, MapPin, RefreshCw } from 'lucide-react'
+import { PlusCircle, Home, Settings, MapPin } from 'lucide-react'
 import { MissionPlannerView } from './views/MissionPlannerView'
 import { AdminLayout } from './components/AdminLayout'
 import { SuperAdminDashboard } from './views/admin/SuperAdminDashboard'
@@ -29,8 +29,7 @@ type View = 'feed' | 'golive' | 'settings' | 'profile';
 function ProtectedApp() {
   const [currentView, setCurrentView] = useState<View>('feed')
   const [profileUserId, setProfileUserId] = useState<string | null>(null)
-  const [locationGranted, setLocationGranted] = useState<boolean | null>(null)
-  const [locationError, setLocationError] = useState<string | null>(null)
+  const [locationBanner, setLocationBanner] = useState<string | null>(null)
   const { user, isLoading } = useAuth()
   const loc = useLocation()
   const targetReelId = (loc.state as { targetReelId?: string })?.targetReelId || null
@@ -43,32 +42,47 @@ function ProtectedApp() {
     }
   }, []);
 
-  // Check geolocation permission and block app if denied
+  // Silently probe geolocation on mount and show a dismissible banner if
+  // denied — but NEVER block the user from their current screen.
+  // The permission prompt itself (browser popup) is triggered here; if the
+  // user denies, we retry silently every 30s in case they change their mind.
   useEffect(() => {
     if (!user) return;
-    if (!navigator.geolocation) {
-      setLocationGranted(false);
-      setLocationError('Geolocation is not supported by your browser.');
-      return;
-    }
+    if (!navigator.geolocation) return;
 
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setLocationGranted(true);
-        setLocationError(null);
-      },
-      (error) => {
-        setLocationGranted(false);
-        if (error.code === error.PERMISSION_DENIED) {
-          setLocationError('Location permission denied. GeoAlert requires location access to show you alerts within 30 miles. Please enable location in your browser/device settings and reload.');
-        } else if (error.code === error.POSITION_UNAVAILABLE) {
-          setLocationError('Location information unavailable. Please ensure your device has GPS enabled.');
-        } else {
-          setLocationError('Location request timed out. Please check your connection and try again.');
-        }
-      },
-      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-    );
+    let retryTimer: ReturnType<typeof setInterval> | null = null;
+    let dismissed = false;
+
+    const probe = () => {
+      if (dismissed) return;
+      navigator.geolocation.getCurrentPosition(
+        () => {
+          setLocationBanner(null);
+        },
+        (error) => {
+          if (dismissed) return;
+          if (error.code === error.PERMISSION_DENIED) {
+            setLocationBanner('Location access helps show nearby alerts. You can enable it in browser settings at any time.');
+          } else {
+            // POSITION_UNAVAILABLE or TIMEOUT — stay silent, retry later
+            setLocationBanner(null);
+          }
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    };
+
+    // Initial probe
+    probe();
+
+    // Retry silently every 30s so that if the user enables location in
+    // browser settings the banner disappears automatically.
+    retryTimer = setInterval(probe, 30000);
+
+    return () => {
+      dismissed = true;
+      if (retryTimer) clearInterval(retryTimer);
+    };
   }, [user]);
 
   // Location tracking is handled globally by <LocationReporter /> so that
@@ -80,35 +94,6 @@ function ProtectedApp() {
 
   if (!user) {
     return <Navigate to="/login" replace />
-  }
-
-  // Block app if location is not granted
-  if (locationGranted === false) {
-    return (
-      <div className="min-h-screen bg-black flex items-center justify-center p-6">
-        <div className="max-w-sm w-full text-center space-y-6">
-          <div className="w-20 h-20 mx-auto rounded-full bg-red-500/10 border border-red-500/30 flex items-center justify-center">
-            <MapPin className="w-10 h-10 text-red-400" />
-          </div>
-          <div>
-            <h2 className="text-white text-xl font-bold mb-2">Location Required</h2>
-            <p className="text-white/60 text-sm leading-relaxed">
-              {locationError || 'GeoAlert needs your location to show you nearby alerts within 30 miles.'}
-            </p>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 rounded-full text-white text-sm font-medium transition-colors"
-          >
-            <RefreshCw className="w-4 h-4" />
-            Retry
-          </button>
-          <p className="text-white/30 text-xs">
-            After enabling location in your browser settings, click retry.
-          </p>
-        </div>
-      </div>
-    )
   }
 
   const navigateToProfile = (userId: string) => {
@@ -137,6 +122,22 @@ function ProtectedApp() {
   return (
     <div className="flex justify-center bg-black min-h-screen text-white overflow-hidden">
       <div className="relative w-full max-w-[480px] h-[100dvh] bg-zinc-950 border-x border-white/10">
+
+        {/* Non-blocking location banner — appears at top, dismissible */}
+        {locationBanner && (
+          <div className="absolute top-0 left-0 right-0 z-[60] px-4 pt-3">
+            <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900/95 border border-amber-500/30 rounded-xl shadow-lg">
+              <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
+              <p className="text-amber-200/80 text-xs flex-1">{locationBanner}</p>
+              <button
+                onClick={() => setLocationBanner(null)}
+                className="text-amber-200/40 hover:text-amber-200/80 text-xs shrink-0"
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        )}
 
         <main className="absolute inset-0 overflow-hidden">
           {renderView()}
