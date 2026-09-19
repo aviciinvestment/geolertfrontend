@@ -9,7 +9,6 @@ import LandingView from './views/LandingView'
 import { AudioProvider } from './context/AudioContext'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { ThemeProvider } from './context/ThemeContext'
-import { GoogleOAuthProvider } from '@react-oauth/google'
 import { LocationReporter } from './components/LocationReporter'
 
 import { PlusCircle, Home, Settings, MapPin } from 'lucide-react'
@@ -22,7 +21,6 @@ import { OnboardAdmin } from './views/admin/OnboardAdmin'
 import { OnboardResponder } from './views/admin/OnboardResponder'
 import { FoundersView } from './views/admin/FoundersView'
 
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 type View = 'feed' | 'golive' | 'settings' | 'profile';
 
@@ -273,10 +271,9 @@ function ProtectedFounder() {
 
 function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <ThemeProvider defaultTheme="dark" storageKey="achiv-theme">
-          <BrowserRouter>
-            <AuthProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="achiv-theme">
+      <BrowserRouter>
+        <AuthProvider>
               <LocationReporter />
               <AudioProvider>
                 <Routes>
@@ -290,10 +287,9 @@ function App() {
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </AudioProvider>
-            </AuthProvider>
-          </BrowserRouter>
-      </ThemeProvider>
-    </GoogleOAuthProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   )
 }
 

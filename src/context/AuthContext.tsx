@@ -1,4 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { onAuthStateChanged } from 'firebase/auth';
+import { auth } from '../services/firebase';
+import axios from 'axios';
 
 export type UserRole = 'user' | 'authority' | 'admin' | 'superadmin' | 'founder';
 
@@ -29,6 +32,7 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -36,14 +40,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem('achiv_token');
-    const storedUser = localStorage.getItem('achiv_user');
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          const authToken = await firebaseUser.getIdToken();
+          setToken(authToken);
+          localStorage.setItem('achiv_token', authToken);
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
+          // Sync with backend to get role and extra profile data
+          const response = await axios.get(`${API_URL}/me`, {
+            headers: { Authorization: `Bearer ${authToken}` }
+          });
+
+          if (response.data.success) {
+            setUser(response.data.user);
+            localStorage.setItem('achiv_user', JSON.stringify(response.data.user));
+          } else {
+            setUser(null);
+            setToken(null);
+            localStorage.removeItem('achiv_token');
+            localStorage.removeItem('achiv_user');
+          }
+        } catch (error) {
+          console.error("Error syncing with backend:", error);
+          setUser(null);
+          setToken(null);
+        }
+      } else {
+        setUser(null);
+        setToken(null);
+        localStorage.removeItem('achiv_token');
+        localStorage.removeItem('achiv_user');
+      }
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = (userData: User, authToken: string) => {
@@ -62,7 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await auth.signOut();
     setUser(null);
     setToken(null);
     localStorage.removeItem('achiv_token');
