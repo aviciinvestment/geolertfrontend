@@ -1,3 +1,5 @@
+import { auth } from './firebase';
+
 export interface Stream {
   _id: string;
   url: string;
@@ -158,10 +160,22 @@ const getAuthHeader = (): Record<string, string> => {
   return token ? { 'Authorization': `Bearer ${token}` } : {};
 };
 
+const fetchWithAuth = async (url: string, options: RequestInit = {}) => {
+  const response = await fetch(url, options);
+  if (response.status === 401) {
+    await auth.signOut();
+    localStorage.removeItem('achiv_token');
+    localStorage.removeItem('achiv_user');
+    window.location.href = '/login';
+    throw new Error('Session expired');
+  }
+  return response;
+};
+
 export const StreamService = {
   getFeed: async (): Promise<Stream[]> => {
     try {
-      const response = await fetch(`${API_URL}/feed`, {
+      const response = await fetchWithAuth(`${API_URL}/feed`, {
         headers: { ...getAuthHeader() }
       });
       const json = await response.json();
@@ -179,7 +193,7 @@ export const StreamService = {
   // specialization-aware), shaped like the feed.
   getAssignedReels: async (): Promise<Stream[]> => {
     try {
-      const response = await fetch(`${API_URL}/assigned`, {
+      const response = await fetchWithAuth(`${API_URL}/assigned`, {
         headers: { ...getAuthHeader() }
       });
       const json = await response.json();
@@ -195,7 +209,7 @@ export const StreamService = {
 
   getAnalytics: async (): Promise<any> => {
     try {
-      const response = await fetch(`${API_URL}/analytics`, {
+      const response = await fetchWithAuth(`${API_URL}/analytics`, {
         headers: { ...getAuthHeader() },
       });
       const json = await response.json();
@@ -216,7 +230,7 @@ export const StreamService = {
       if (opts?.authorityId) params.set('authorityId', opts.authorityId);
       if (opts?.adminId) params.set('adminId', opts.adminId);
       const qs = params.toString() ? `?${params.toString()}` : '';
-      const response = await fetch(`${API_URL}/jurisdiction${qs}`, {
+      const response = await fetchWithAuth(`${API_URL}/jurisdiction${qs}`, {
         headers: { ...getAuthHeader() },
       });
       const json = await response.json();
@@ -229,7 +243,7 @@ export const StreamService = {
 
   getFounderDashboard: async (): Promise<JurisdictionDashboard | null> => {
     try {
-      const response = await fetch(`${FOUNDER_URL}/dashboard`, {
+      const response = await fetchWithAuth(`${FOUNDER_URL}/dashboard`, {
         headers: { ...getAuthHeader() },
       });
       const json = await response.json();
@@ -242,7 +256,7 @@ export const StreamService = {
 
   getAllUsersGrouped: async (): Promise<GroupedUsers | null> => {
     try {
-      const response = await fetch(`${FOUNDER_URL}/users`, {
+      const response = await fetchWithAuth(`${FOUNDER_URL}/users`, {
         headers: { ...getAuthHeader() },
       });
       const json = await response.json();
@@ -256,7 +270,7 @@ export const StreamService = {
   // Users under this account: Authority Responders (admin) or Local Admins (superadmin)
   getSubordinates: async (): Promise<Subordinate[]> => {
     try {
-      const response = await fetch(`${USERS_URL}/subordinates`, {
+      const response = await fetchWithAuth(`${USERS_URL}/subordinates`, {
         headers: { ...getAuthHeader() },
       });
       const json = await response.json();
@@ -273,7 +287,7 @@ export const StreamService = {
     targetId?: string
   ): Promise<{ success: boolean; sent?: number; message?: string }> => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/broadcast`, {
+      const response = await fetchWithAuth(`${import.meta.env.VITE_API_URL}/api/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -292,7 +306,7 @@ export const StreamService = {
   // Persisted notifications (broadcasts + routed incident alerts) for this user.
   getNotifications: async (limit: number = 50): Promise<AppNotification[]> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${import.meta.env.VITE_API_URL}/api/notifications?limit=${limit}`,
         { headers: { ...getAuthHeader() } }
       );
@@ -307,7 +321,7 @@ export const StreamService = {
   // Mark every outstanding notification as read.
   markNotificationsRead: async (): Promise<boolean> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         `${import.meta.env.VITE_API_URL}/api/notifications/read`,
         {
           method: 'PUT',
@@ -324,7 +338,7 @@ export const StreamService = {
 
   startStream: async (title: string): Promise<{ success: boolean; streamId: string }> => {
     try {
-      const response = await fetch(`${API_URL}/live`, {
+      const response = await fetchWithAuth(`${API_URL}/live`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -365,7 +379,7 @@ export const StreamService = {
     }
 
     try {
-      const response = await fetch(`${API_URL}/upload`, {
+      const response = await fetchWithAuth(`${API_URL}/upload`, {
         method: 'POST',
         headers: {
           ...getAuthHeader()
@@ -382,7 +396,7 @@ export const StreamService = {
 
   likeReel: async (reelId: string): Promise<{ success: boolean; data?: Stream }> => {
     try {
-      const response = await fetch(`${API_URL}/${reelId}/like`, {
+      const response = await fetchWithAuth(`${API_URL}/${reelId}/like`, {
         method: 'POST',
         headers: {
           ...getAuthHeader()
@@ -398,7 +412,7 @@ export const StreamService = {
 
   viewReel: async (reelId: string): Promise<{ success: boolean; data?: Stream }> => {
     try {
-      const response = await fetch(`${API_URL}/${reelId}/view`, {
+      const response = await fetchWithAuth(`${API_URL}/${reelId}/view`, {
         method: 'POST',
         headers: {
           ...getAuthHeader()
@@ -414,7 +428,7 @@ export const StreamService = {
 
   getComments: async (reelId: string): Promise<Comment[]> => {
     try {
-      const response = await fetch(`${API_URL}/${reelId}/comments`, {
+      const response = await fetchWithAuth(`${API_URL}/${reelId}/comments`, {
         headers: {
           ...getAuthHeader()
         }
@@ -432,7 +446,7 @@ export const StreamService = {
 
   addComment: async (reelId: string, username: string, text: string): Promise<{ success: boolean; data?: Comment }> => {
     try {
-      const response = await fetch(`${API_URL}/${reelId}/comments`, {
+      const response = await fetchWithAuth(`${API_URL}/${reelId}/comments`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -454,7 +468,7 @@ export const StreamService = {
     formData.append('username', username);
 
     try {
-      const response = await fetch(`${API_URL}/${reelId}/comments/video`, {
+      const response = await fetchWithAuth(`${API_URL}/${reelId}/comments/video`, {
         method: 'POST',
         headers: {
           ...getAuthHeader()
@@ -480,7 +494,7 @@ export const StreamService = {
 
   updateProfile: async (data: { name?: string; avatar?: string; bio?: string; isAnonymous?: boolean }): Promise<{ success: boolean; user?: any }> => {
     try {
-      const response = await fetch(`${AUTH_URL}/me`, {
+      const response = await fetchWithAuth(`${AUTH_URL}/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -500,7 +514,7 @@ export const StreamService = {
     const formData = new FormData();
     formData.append('avatar', file);
     try {
-      const response = await fetch(`${AUTH_URL}/avatar`, {
+      const response = await fetchWithAuth(`${AUTH_URL}/avatar`, {
         method: 'POST',
         headers: { ...getAuthHeader() },
         body: formData,
@@ -515,7 +529,7 @@ export const StreamService = {
 
   getUserProfile: async (userId: string): Promise<{ success: boolean; user?: UserProfile; reels?: Stream[] }> => {
     try {
-      const response = await fetch(`${USERS_URL}/${userId}`, {
+      const response = await fetchWithAuth(`${USERS_URL}/${userId}`, {
         headers: { ...getAuthHeader() },
       });
       const json = await response.json();
@@ -528,7 +542,7 @@ export const StreamService = {
 
   resolveReel: async (reelId: string, resolution: 'attended' | 'false_report' | 'pending'): Promise<{ success: boolean; data?: Stream }> => {
     try {
-      const response = await fetch(`${API_URL}/${reelId}/resolve`, {
+      const response = await fetchWithAuth(`${API_URL}/${reelId}/resolve`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
