@@ -5,7 +5,7 @@ export interface VideoAnalysis {
   severityReason: string;
 }
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/gemini`;
+const API_URL = `${import.meta.env.API_URL}/api/gemini`;
 
 export async function analyzeVideo(videoUrl: string, onStatus?: (status: string) => void): Promise<VideoAnalysis> {
   onStatus?.('Uploading video to Gemini...');

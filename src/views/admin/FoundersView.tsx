@@ -107,7 +107,7 @@ export const FoundersView: React.FC = () => {
 
   // Stay live: refetch whenever a new emergency report hits the network
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL);
+    const socket = io(import.meta.env.API_URL);
     const onNewReel = () => {
       fetchData();
     };

@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Shield, User, Mail, Lock, CheckCircle2, Globe, MapPin } from 'lucide-react';
 import { COUNTRIES } from '../../data/countries';
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
+const API_URL = `${import.meta.env.API_URL}/api/auth`;
 
 interface CreatedAdmin {
   id: string;

@@ -4,7 +4,7 @@ import { UserPlus, User, Mail, Lock, CheckCircle2, MapPin, ShieldAlert } from 'l
 import { useAuth } from '../../context/AuthContext';
 import { SPECIALIZATION_OPTIONS } from '../../constants/incidentCategories';
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
+const API_URL = `${import.meta.env.API_URL}/api/auth`;
 
 interface CreatedAuthority {
   id: string;

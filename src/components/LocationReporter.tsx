@@ -24,7 +24,7 @@ export const LocationReporter: React.FC = () => {
       const token = localStorage.getItem('achiv_token');
       if (!token) return;
       try {
-        await fetch(`${import.meta.env.VITE_API_URL}/api/auth/location`, {
+        await fetch(`${import.meta.env.API_URL}/api/auth/location`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',

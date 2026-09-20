@@ -317,7 +317,7 @@ export function MissionPlannerView() {
 
   // Live socket: refresh reported posts + receive admin broadcasts in real time
   useEffect(() => {
-    const socket = io(import.meta.env.VITE_API_URL);
+    const socket = io(import.meta.env.API_URL);
     setLiveSocket(socket);
     socket.on('new_reel', () => fetchPosts());
     socket.on('reel_analysis_updated', () => fetchPosts());

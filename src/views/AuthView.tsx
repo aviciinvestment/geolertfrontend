@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -8,10 +8,13 @@ import {
   createUserWithEmailAndPassword, 
   updateProfile, 
   signInWithPopup, 
-  GoogleAuthProvider 
+  GoogleAuthProvider,
+  sendEmailVerification,
+  reload
 } from 'firebase/auth';
+import { MailCheck } from 'lucide-react';
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
+const API_URL = `${import.meta.env.API_URL}/api/auth`;
 
 const homeForRole = (role?: string): string => {
   switch (role) {
@@ -28,6 +31,12 @@ const homeForRole = (role?: string): string => {
   }
 };
 
+interface VerificationState {
+  email: string;
+  mode: 'register' | 'login';
+  name?: string;
+}
+
 export const AuthView: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -37,6 +46,86 @@ export const AuthView: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [verifyRequired, setVerifyRequired] = useState<VerificationState | null>(null);
+  const [verifyMessage, setVerifyMessage] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const checkTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // If Firebase still has an unverified session (e.g. page refresh mid-verification),
+  // surface the verification screen again.
+  useEffect(() => {
+    if (auth.currentUser && !auth.currentUser.emailVerified && !verifyRequired) {
+      setVerifyRequired({ email: auth.currentUser.email || '', mode: 'login' });
+    }
+  }, []);
+
+  const completeLogin = useCallback(async (token: string) => {
+    const response = await axios.post(`${API_URL}/login`, {}, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (response.data.success) {
+      login(response.data.user, token);
+      navigate(homeForRole(response.data.user?.role), { replace: true });
+    }
+  }, [login, navigate]);
+
+  const completeRegistration = useCallback(async (token: string, pendingName: string, pendingEmail: string) => {
+    const response = await axios.post(`${API_URL}/register`,
+      { name: pendingName, email: pendingEmail },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (response.data.success) {
+      login(response.data.user, token);
+      navigate(homeForRole(response.data.user?.role), { replace: true });
+    }
+  }, [login, navigate]);
+
+  // After the user verifies their email, finish the pending register/login flow.
+  const finalizeAfterVerification = useCallback(async (pending: VerificationState) => {
+    const fbUser = auth.currentUser;
+    if (!fbUser) return;
+    await reload(fbUser);
+    if (!fbUser.emailVerified) return;
+    if (checkTimer.current) {
+      clearInterval(checkTimer.current);
+      checkTimer.current = null;
+    }
+    const token = await fbUser.getIdToken();
+    setVerifying(true);
+    try {
+      if (pending.mode === 'register') {
+        await completeRegistration(token, pending.name || '', pending.email);
+      } else {
+        await completeLogin(token);
+      }
+      setVerifyRequired(null);
+    } catch (err: any) {
+      setError(err.response?.data?.message || err.message || 'Authentication failed. Please try again.');
+      setVerifyRequired(null);
+    } finally {
+      setVerifying(false);
+    }
+  }, [completeLogin, completeRegistration]);
+
+  // Poll every few seconds so the app opens automatically once verified.
+  useEffect(() => {
+    if (!verifyRequired) {
+      if (checkTimer.current) {
+        clearInterval(checkTimer.current);
+        checkTimer.current = null;
+      }
+      return;
+    }
+    checkTimer.current = setInterval(() => {
+      finalizeAfterVerification(verifyRequired);
+    }, 4000);
+    return () => {
+      if (checkTimer.current) {
+        clearInterval(checkTimer.current);
+        checkTimer.current = null;
+      }
+    };
+  }, [verifyRequired, finalizeAfterVerification]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,33 +136,25 @@ export const AuthView: React.FC = () => {
       if (isLogin) {
         // Firebase Login
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const token = await userCredential.user.getIdToken();
-        
-        // Sync with backend
-        const response = await axios.post(`${API_URL}/login`, {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await reload(userCredential.user);
 
-        if (response.data.success) {
-          login(response.data.user, token);
-          navigate(homeForRole(response.data.user?.role), { replace: true });
+        if (!userCredential.user.emailVerified) {
+          setVerifyMessage('A verification link has been sent to your email.');
+          setVerifyRequired({ email: userCredential.user.email || '', mode: 'login' });
+          return;
         }
+
+        const token = await userCredential.user.getIdToken();
+        await completeLogin(token);
       } else {
         // Firebase Registration
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(userCredential.user, { displayName: name });
-        const token = await userCredential.user.getIdToken();
 
-        // Create user in backend
-        const response = await axios.post(`${API_URL}/register`, 
-          { name, email }, 
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-
-        if (response.data.success) {
-          login(response.data.user, token);
-          navigate(homeForRole(response.data.user?.role), { replace: true });
-        }
+        // New sign ups must verify their email before they can use the app.
+        await sendEmailVerification(userCredential.user);
+        setVerifyMessage('A verification link has been sent to your email.');
+        setVerifyRequired({ email: userCredential.user.email || '', mode: 'register', name });
       }
     } catch (err: any) {
       console.error('Authentication Error:', err);
@@ -82,6 +163,31 @@ export const AuthView: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const resendVerification = async () => {
+    setError('');
+    const fbUser = auth.currentUser;
+    if (!fbUser || !verifyRequired) return;
+    try {
+      await sendEmailVerification(fbUser);
+      setVerifyMessage('Verification email resent. Please check your inbox.');
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email. Please try again.');
+    }
+  };
+
+  const checkVerifiedManual = async () => {
+    if (!verifyRequired) return;
+    setError('');
+    await finalizeAfterVerification(verifyRequired);
+  };
+
+  const switchToLogin = async () => {
+    setIsLogin(true);
+    setError('');
+    setVerifyRequired(null);
+    setIsLoading(false);
   };
 
   const handleGoogleSuccess = async () => {
@@ -107,6 +213,79 @@ export const AuthView: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Full-screen "verify your email" state.
+  if (verifyRequired) {
+    return (
+      <div className="fixed inset-0 flex justify-center bg-black text-white overflow-hidden overscroll-none">
+        <div className="relative w-full max-w-[480px] h-full flex flex-col items-center p-6 overflow-hidden bg-[#0A0A0A] border-x border-white/5">
+
+          <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[50%] bg-gradient-to-b from-pink-500/20 to-transparent blur-[80px] pointer-events-none" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[120%] h-[50%] bg-gradient-to-t from-violet-500/20 to-transparent blur-[80px] pointer-events-none" />
+
+          <div className="w-full flex-1 flex flex-col justify-center z-10 max-w-sm pb-10">
+            <div className="text-center mb-10">
+              <h1 className="text-5xl font-bold tracking-tight text-white mb-2">
+                ACHIV
+              </h1>
+              <p className="text-white/50 text-[15px] font-medium px-4">
+                Verify your email to continue.
+              </p>
+            </div>
+
+            <div className="w-full bg-white/[0.03] backdrop-blur-3xl border border-white/10 rounded-[32px] p-6 shadow-2xl text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/15 flex items-center justify-center mb-5">
+                <MailCheck className="w-8 h-8 text-emerald-400" />
+              </div>
+              <h2 className="text-white text-lg font-semibold mb-2">Check your inbox</h2>
+              <p className="text-white/60 text-[13px] leading-relaxed mb-6">
+                We sent a verification link to{' '}
+                <span className="text-white font-medium">{verifyRequired.email}</span>.
+                Click the link in the email, then tap below (or wait a few seconds) to continue.
+              </p>
+
+              {verifyMessage && (
+                <p className="text-emerald-400/80 text-[12px] font-medium mb-4">{verifyMessage}</p>
+              )}
+              {error && (
+                <div className="text-red-400 text-[13px] font-medium text-center bg-red-500/10 border border-red-500/20 py-2.5 px-4 rounded-xl mb-4">
+                  {error}
+                </div>
+              )}
+
+              <button
+                onClick={checkVerifiedManual}
+                disabled={verifying}
+                className="w-full bg-white text-black font-semibold text-[16px] py-4 rounded-full hover:bg-white/90 transition-colors active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {verifying ? (
+                  <div className="w-5 h-5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                ) : (
+                  'I have verified my email'
+                )}
+              </button>
+
+              <button
+                onClick={resendVerification}
+                disabled={verifying}
+                className="w-full bg-black/40 border border-white/10 text-white font-semibold text-[15px] py-3.5 rounded-full hover:bg-white/5 transition-colors active:scale-[0.98] disabled:opacity-50 mt-3"
+              >
+                Resend verification email
+              </button>
+
+              <button
+                onClick={switchToLogin}
+                disabled={verifying}
+                className="w-full text-white/50 text-[14px] font-medium py-3 hover:text-white transition-colors mt-2"
+              >
+                Try signing in again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 flex justify-center bg-black text-white overflow-hidden overscroll-none">

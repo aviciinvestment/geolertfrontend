@@ -3,7 +3,7 @@ import axios from 'axios';
 import { Users, User, Mail, Lock, CheckCircle2, MapPin } from 'lucide-react';
 import { NIGERIA_LGAS } from '../../data/nigeriaLGAs';
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
+const API_URL = `${import.meta.env.API_URL}/api/auth`;
 
 const STATES = Object.keys(NIGERIA_LGAS);
 

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import axios from 'axios';
 import { UserCheck, UserX, Clock, CheckCircle2 } from 'lucide-react';
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
+const API_URL = `${import.meta.env.API_URL}/api/auth`;
 
 interface PendingUser {
   _id: string;

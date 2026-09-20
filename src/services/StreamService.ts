@@ -150,10 +150,10 @@ export interface AppNotification {
   createdAt?: string;
 }
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/reels`;
-const AUTH_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
-const USERS_URL = `${import.meta.env.VITE_API_URL}/api/users`;
-const FOUNDER_URL = `${import.meta.env.VITE_API_URL}/api/founder`;
+const API_URL = `${import.meta.env.API_URL}/api/reels`;
+const AUTH_URL = `${import.meta.env.API_URL}/api/auth`;
+const USERS_URL = `${import.meta.env.API_URL}/api/users`;
+const FOUNDER_URL = `${import.meta.env.API_URL}/api/founder`;
 
 const getAuthHeader = (): Record<string, string> => {
   const token = localStorage.getItem('achiv_token');
@@ -287,7 +287,7 @@ export const StreamService = {
     targetId?: string
   ): Promise<{ success: boolean; sent?: number; message?: string }> => {
     try {
-      const response = await fetchWithAuth(`${import.meta.env.VITE_API_URL}/api/broadcast`, {
+      const response = await fetchWithAuth(`${import.meta.env.API_URL}/api/broadcast`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -307,7 +307,7 @@ export const StreamService = {
   getNotifications: async (limit: number = 50): Promise<AppNotification[]> => {
     try {
       const response = await fetchWithAuth(
-        `${import.meta.env.VITE_API_URL}/api/notifications?limit=${limit}`,
+        `${import.meta.env.API_URL}/api/notifications?limit=${limit}`,
         { headers: { ...getAuthHeader() } }
       );
       const json = await response.json();
@@ -322,7 +322,7 @@ export const StreamService = {
   markNotificationsRead: async (): Promise<boolean> => {
     try {
       const response = await fetchWithAuth(
-        `${import.meta.env.VITE_API_URL}/api/notifications/read`,
+        `${import.meta.env.API_URL}/api/notifications/read`,
         {
           method: 'PUT',
           headers: { ...getAuthHeader() },

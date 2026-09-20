@@ -20,6 +20,7 @@ import { OnboardSuperAdmin } from './views/admin/OnboardSuperAdmin'
 import { OnboardAdmin } from './views/admin/OnboardAdmin'
 import { OnboardResponder } from './views/admin/OnboardResponder'
 import { FoundersView } from './views/admin/FoundersView'
+import { canAccessRole } from './constants/roles'
 
 
 type View = 'feed' | 'golive' | 'settings' | 'profile';
@@ -182,9 +183,8 @@ function ProtectedAuthority() {
     return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
   }
 
-  // Only fully authorized Authority Responders may enter
-  const isAuthorizedAuthority =
-    user && user.role === 'authority' && user.authorizationStatus === 'approved'
+  // The founder email may act as any staff role; everyone else needs their own role.
+  const isAuthorizedAuthority = user && canAccessRole(user, 'authority')
 
   if (!isAuthorizedAuthority) {
     return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />
@@ -218,8 +218,8 @@ function ProtectedAdmin({ role }: { role: 'superadmin' | 'admin' }) {
   // Only an authorized account holding the exact role may enter.
   // Super Admin dashboard -> role 'superadmin' (self-onboarded via registration)
   // Admin dashboard       -> role 'admin'      (must be authorized by Super Admin first)
-  const isAuthorized =
-    user && user.role === role && user.authorizationStatus === 'approved'
+  // The founder email may enter all four staff areas regardless of stored role.
+  const isAuthorized = user && canAccessRole(user, role)
 
   if (!isAuthorized) {
     return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />
@@ -252,9 +252,8 @@ function ProtectedFounder() {
     return <div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>
   }
 
-  // Only an authorized account holding the founder role may enter.
-  const isAuthorized =
-    user && user.role === 'founder' && user.authorizationStatus === 'approved'
+  // Only the sole founder (matching FOUNDER_EMAIL) may enter this area.
+  const isAuthorized = user && canAccessRole(user, 'founder')
 
   if (!isAuthorized) {
     return <Navigate to={user ? homeForRole(user.role) : '/login'} replace />

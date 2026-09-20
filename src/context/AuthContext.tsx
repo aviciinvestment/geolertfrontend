@@ -25,6 +25,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   token: string | null;
+  unverifiedEmail: string | null;
   login: (userData: User, token: string) => void;
   updateUser: (userData: Partial<User>) => void;
   logout: () => void;
@@ -32,16 +33,30 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-const API_URL = `${import.meta.env.VITE_API_URL}/api/auth`;
+const API_URL = `${import.meta.env.API_URL}/api/auth`;
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
+        // Email/password accounts are gated on email verification.
+        // Until the email is verified the user is not "logged in" to the app.
+        if (!firebaseUser.emailVerified) {
+          setUnverifiedEmail(firebaseUser.email || null);
+          setUser(null);
+          setToken(null);
+          localStorage.removeItem('achiv_token');
+          localStorage.removeItem('achiv_user');
+          setIsLoading(false);
+          return;
+        }
+        setUnverifiedEmail(null);
+
         try {
           const authToken = await firebaseUser.getIdToken();
           setToken(authToken);
@@ -67,6 +82,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setToken(null);
         }
       } else {
+        setUnverifiedEmail(null);
         setUser(null);
         setToken(null);
         localStorage.removeItem('achiv_token');
@@ -103,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, login, updateUser, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, unverifiedEmail, login, updateUser, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

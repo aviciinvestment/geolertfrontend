@@ -40,7 +40,7 @@ export function useFeedController() {
 
     fetchFeed();
 
-    const socket = io(import.meta.env.VITE_API_URL);
+    const socket = io(import.meta.env.API_URL);
 
     socket.on('new_reel', (newStream: Stream) => {
       if (isMounted) {
